@@ -301,7 +301,7 @@ The Overlay is read-only and click-through. It keeps live status at the start, p
 - **Do** keep calibration values adjacent to the phase or behavior they affect.
 - **Do** use Action Blue for primary action, focus, selection, active progress, and no other purpose.
 - **Do** pair light and dark semantic roles and verify both at common Windows scaling levels.
-- **Do** preserve the visible seven-stage sequence and the explicit F10 safety path.
+- **Do** preserve the visible seven-stage sequence and the explicit configured-stop-hotkey safety path.
 - **Do** keep the Overlay read-only, quiet, clipped, and free of outer shadow.
 
 ### Don't:

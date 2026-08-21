@@ -27,9 +27,20 @@ export const defaultConfig: AppConfig = {
     superWait: 1.8,
     sprintATime: 0.1,
     sprintToFinisher: 0,
-    finisherWait: 3,
+  },
+  hotkeys: { start: "F8", stop: "F10" },
+  gameKeys: {
+    sprint: "ShiftLeft",
+    jump: "Space",
+    interact: "KeyE",
+    weaponSlot2: "Digit2",
+    melee: "KeyC",
+    ascension: "KeyX",
+    superAbility: "KeyF",
+    finisher: "KeyG",
   },
   overlayVisible: true,
+  usageGuideSeen: false,
 };
 
 export const defaultRuntime: RuntimeSnapshot = {
@@ -44,6 +55,7 @@ const isTauri = () => "__TAURI_INTERNALS__" in window;
 let mockConfig = structuredClone(defaultConfig);
 let mockRuntime = structuredClone(defaultRuntime);
 const mockListeners = new Set<(value: RuntimeSnapshot) => void>();
+const mockConfigListeners = new Set<(value: AppConfig) => void>();
 let mockTimer: number | undefined;
 
 function emitMock(next: RuntimeSnapshot) {
@@ -106,6 +118,7 @@ export async function getConfig(): Promise<AppConfig> {
 export async function saveConfig(config: AppConfig): Promise<AppConfig> {
   if (isTauri()) return invoke<AppConfig>("save_config", { config });
   mockConfig = structuredClone(config);
+  mockConfigListeners.forEach((listener) => listener(structuredClone(mockConfig)));
   return structuredClone(mockConfig);
 }
 
@@ -152,4 +165,14 @@ export async function onRuntimeState(
   }
   mockListeners.add(listener);
   return () => mockListeners.delete(listener);
+}
+
+export async function onConfigState(
+  listener: (value: AppConfig) => void,
+): Promise<UnlistenFn> {
+  if (isTauri()) {
+    return listen<AppConfig>("config-state", (event) => listener(event.payload));
+  }
+  mockConfigListeners.add(listener);
+  return () => mockConfigListeners.delete(listener);
 }

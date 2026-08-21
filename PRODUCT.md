@@ -14,7 +14,7 @@ The primary user runs D2 Morgath Kick beside Destiny 2 on Windows 10 or 11. They
 
 D2 Morgath Kick is a compact desktop calibration console for one fixed Morgath Kick action sequence. It gives the operator a visible place to confirm resolution and sensitivity, adjust aiming offsets and timing, follow the current phase, and abort the sequence safely.
 
-Success means the operator can understand the current configuration at a glance, make a small correction without editing a file, and trust F10 to stop the sequence and release held inputs.
+Success means the operator can understand the current configuration at a glance, make a small correction without editing a file, and trust the configured stop hotkey to stop the sequence and release held inputs.
 
 ## Positioning
 
@@ -24,14 +24,15 @@ The product turns a hard-coded replay script into an inspectable timing instrume
 
 - Windows 10 or 11 with Destiny 2 running in borderless or windowed mode.
 - The main window is used before or between attempts. The always-on-top overlay remains visible during play.
-- F8 starts the sequence and F10 aborts it globally.
+- F8 starts the sequence and F10 aborts it globally by default; both hotkeys are configurable.
 - The reference setup is 1920 x 1080, field of view 100, look sensitivity 15, and ADS modifier 1.0.
 - The GitHub Pages portal introduces the tool, links to the source repository, and downloads the latest Windows release.
 
 ## Capabilities and Constraints
 
 - Rust owns the keyboard and mouse input sequence.
-- Gameplay keys remain fixed in this release.
+- Non-movement gameplay keys are configurable; W/A/S/D and right-mouse ADS remain fixed.
+- First launch shows the required armor, subclass, FOV, and in-game positioning checklist and keeps it available from the main window.
 - The interface detects the Destiny 2 client size and also accepts a manual resolution.
 - The operator can adjust the first ADS movement, void-arrow landing point, sprint direction, timing, look sensitivity, and ADS modifier.
 - Every wait and mouse-movement step must be cancellable. Abort, error, and application exit must release held inputs.

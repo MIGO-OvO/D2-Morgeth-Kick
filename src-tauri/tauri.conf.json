@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "D2 Morgath Kick · 动作校准台",
+        "title": "D2 Morgath Kick",
         "url": "index.html",
         "width": 1180,
         "height": 760,
@@ -26,7 +26,7 @@
       },
       {
         "label": "overlay",
-        "title": "D2 Morgath Kick Overlay",
+        "title": "D2 Morgath Kick 悬浮窗",
         "url": "index.html?view=overlay",
         "width": 470,
         "height": 62,
@@ -49,7 +49,7 @@
     "active": true,
     "targets": ["nsis"],
     "copyright": "Copyright (c) 2026 MIGO_12",
-    "shortDescription": "D2 Morgath Kick 动作校准台",
-    "longDescription": "检查并调整一套可随时中止的固定键鼠动作序列。"
+    "shortDescription": "D2 Morgath Kick 动作校准工具",
+    "longDescription": "检查并调整一套可随时中止、支持按键映射的键鼠动作序列。"
   }
 }

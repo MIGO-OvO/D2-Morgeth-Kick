@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 use tauri::{AppHandle, Manager};
+use tauri_plugin_global_shortcut::Shortcut;
+
+use crate::input;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -18,7 +21,6 @@ pub struct TimingConfig {
     pub super_wait: f64,
     pub sprint_a_time: f64,
     pub sprint_to_finisher: f64,
-    pub finisher_wait: f64,
 }
 
 impl Default for TimingConfig {
@@ -30,8 +32,113 @@ impl Default for TimingConfig {
             super_wait: 1.8,
             sprint_a_time: 0.1,
             sprint_to_finisher: 0.0,
-            finisher_wait: 3.0,
         }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct HotkeyConfig {
+    pub start: String,
+    pub stop: String,
+}
+
+impl Default for HotkeyConfig {
+    fn default() -> Self {
+        Self {
+            start: "F8".into(),
+            stop: "F10".into(),
+        }
+    }
+}
+
+impl HotkeyConfig {
+    pub fn shortcuts(&self) -> Result<[Shortcut; 2], String> {
+        let start = self
+            .start
+            .parse::<Shortcut>()
+            .map_err(|error| format!("启动热键无效：{error}"))?;
+        let stop = self
+            .stop
+            .parse::<Shortcut>()
+            .map_err(|error| format!("停止热键无效：{error}"))?;
+        if start == stop {
+            return Err("启动热键和停止热键不能相同".into());
+        }
+        Ok([start, stop])
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct GameKeyConfig {
+    pub sprint: String,
+    pub jump: String,
+    pub interact: String,
+    pub weapon_slot_2: String,
+    pub melee: String,
+    pub ascension: String,
+    pub super_ability: String,
+    pub finisher: String,
+}
+
+impl Default for GameKeyConfig {
+    fn default() -> Self {
+        Self {
+            sprint: "ShiftLeft".into(),
+            jump: "Space".into(),
+            interact: "KeyE".into(),
+            weapon_slot_2: "Digit2".into(),
+            melee: "KeyC".into(),
+            ascension: "KeyX".into(),
+            super_ability: "KeyF".into(),
+            finisher: "KeyG".into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AppliedGameKeys {
+    pub sprint: u16,
+    pub jump: u16,
+    pub interact: u16,
+    pub weapon_slot_2: u16,
+    pub melee: u16,
+    pub ascension: u16,
+    pub super_ability: u16,
+    pub finisher: u16,
+}
+
+impl AppliedGameKeys {
+    pub fn all(self) -> [u16; 8] {
+        [
+            self.sprint,
+            self.jump,
+            self.interact,
+            self.weapon_slot_2,
+            self.melee,
+            self.ascension,
+            self.super_ability,
+            self.finisher,
+        ]
+    }
+}
+
+impl GameKeyConfig {
+    pub fn applied(&self) -> Result<AppliedGameKeys, String> {
+        let resolve = |name: &str, binding: &str| {
+            input::scan_code(binding).ok_or_else(|| format!("{name}按键不受支持：{binding}"))
+        };
+        Ok(AppliedGameKeys {
+            sprint: resolve("切换疾跑", &self.sprint)?,
+            jump: resolve("跳跃", &self.jump)?,
+            interact: resolve("插旗/交互", &self.interact)?,
+            weapon_slot_2: resolve("切换到 2 号位武器", &self.weapon_slot_2)?,
+            melee: resolve("近战", &self.melee)?,
+            ascension: resolve("飞升", &self.ascension)?,
+            super_ability: resolve("超能", &self.super_ability)?,
+            finisher: resolve("终结技", &self.finisher)?,
+        })
     }
 }
 
@@ -51,7 +158,10 @@ pub struct AppConfig {
     pub sprint_base: [i32; 2],
     pub sprint_trim: [i32; 2],
     pub timings: TimingConfig,
+    pub hotkeys: HotkeyConfig,
+    pub game_keys: GameKeyConfig,
     pub overlay_visible: bool,
+    pub usage_guide_seen: bool,
 }
 
 impl Default for AppConfig {
@@ -70,7 +180,10 @@ impl Default for AppConfig {
             sprint_base: [280, 0],
             sprint_trim: [0, 0],
             timings: TimingConfig::default(),
+            hotkeys: HotkeyConfig::default(),
+            game_keys: GameKeyConfig::default(),
             overlay_visible: true,
+            usage_guide_seen: false,
         }
     }
 }
@@ -97,12 +210,13 @@ impl AppConfig {
             ("超能后等待", self.timings.super_wait),
             ("冲刺侧移时间", self.timings.sprint_a_time),
             ("冲刺至终结", self.timings.sprint_to_finisher),
-            ("终结后等待", self.timings.finisher_wait),
         ] {
             if !value.is_finite() || !(0.0..=60.0).contains(&value) {
                 return Err(format!("{name} 必须在 0 到 60 秒之间"));
             }
         }
+        self.hotkeys.shortcuts()?;
+        self.game_keys.applied()?;
         Ok(())
     }
 
@@ -183,11 +297,35 @@ mod tests {
 
     #[test]
     fn sensitivity_scales_offsets_and_keeps_trim_absolute() {
-        let mut config = AppConfig::default();
-        config.look_sensitivity = 10.0;
-        config.ads_modifier = 1.5;
-        config.void_arrow_trim = [5, -3];
+        let config = AppConfig {
+            look_sensitivity: 10.0,
+            ads_modifier: 1.5,
+            void_arrow_trim: [5, -3],
+            ..AppConfig::default()
+        };
         assert_eq!(config.first_ads_offset(), [-2600, 50]);
         assert_eq!(config.void_arrow_offset(), [-445, 119]);
+    }
+
+    #[test]
+    fn default_shortcuts_and_game_keys_are_valid() {
+        let config = AppConfig::default();
+        assert!(config.hotkeys.shortcuts().is_ok());
+        assert_eq!(
+            config.game_keys.applied().unwrap().all(),
+            [0x2a, 0x39, 0x12, 0x03, 0x2e, 0x2d, 0x21, 0x22]
+        );
+    }
+
+    #[test]
+    fn duplicate_global_shortcuts_are_rejected() {
+        let config = AppConfig {
+            hotkeys: HotkeyConfig {
+                start: "F8".into(),
+                stop: "F8".into(),
+            },
+            ..AppConfig::default()
+        };
+        assert_eq!(config.validate().unwrap_err(), "启动热键和停止热键不能相同");
     }
 }

@@ -6,11 +6,8 @@ use std::{
 use tauri::AppHandle;
 
 use crate::{
-    config::AppConfig,
-    input::{
-        self, KEY_2, KEY_A, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_LEFT_SHIFT, KEY_S, KEY_SPACE,
-        KEY_W, KEY_X,
-    },
+    config::{AppConfig, AppliedGameKeys},
+    input::{self, KEY_A, KEY_D, KEY_S, KEY_W},
     runtime::AppState,
 };
 
@@ -123,7 +120,9 @@ fn set_phase(app: &AppHandle, state: &AppState, index: usize, name: &str) {
     });
 }
 
-fn pre_ascension(app: &AppHandle, state: &AppState) -> SequenceResult {
+// The decimal values below are recorded replay timestamps, not mathematical constants.
+#[allow(clippy::approx_constant)]
+fn pre_ascension(app: &AppHandle, state: &AppState, keys: AppliedGameKeys) -> SequenceResult {
     let start = Instant::now();
     key(state, KEY_W, true)?;
     wait_until(state, start, 0.359)?;
@@ -135,26 +134,26 @@ fn pre_ascension(app: &AppHandle, state: &AppState) -> SequenceResult {
     key(state, KEY_A, false)?;
 
     wait_until(state, start, 1.859)?;
-    key(state, KEY_E, true)?;
+    key(state, keys.interact, true)?;
     wait_until(state, start, 2.718)?;
-    key(state, KEY_E, false)?;
+    key(state, keys.interact, false)?;
 
     wait_until(state, start, 4.703)?;
-    key(state, KEY_E, true)?;
+    key(state, keys.interact, true)?;
     wait_until(state, start, 5.265)?;
-    key(state, KEY_E, false)?;
+    key(state, keys.interact, false)?;
 
     wait_until(state, start, 5.672)?;
-    tap(state, KEY_2, 28)?;
+    tap(state, keys.weapon_slot_2, 28)?;
     wait_until(state, start, 5.953)?;
-    tap(state, KEY_2, 28)?;
+    tap(state, keys.weapon_slot_2, 28)?;
 
     wait_until(state, start, 7.656)?;
     key(state, KEY_W, true)?;
     wait_until(state, start, 8.343)?;
-    key(state, KEY_LEFT_SHIFT, true)?;
+    key(state, keys.sprint, true)?;
     wait_until(state, start, 8.500)?;
-    key(state, KEY_LEFT_SHIFT, false)?;
+    key(state, keys.sprint, false)?;
 
     wait_until(state, start, 10.109)?;
     key(state, KEY_D, true)?;
@@ -180,14 +179,19 @@ fn pre_ascension(app: &AppHandle, state: &AppState) -> SequenceResult {
     key(state, KEY_W, false)?;
     set_phase(app, state, 1, "飞升");
     wait_until(state, start, 17.625)?;
-    key(state, KEY_SPACE, true)?;
+    key(state, keys.jump, true)?;
     wait_until(state, start, 17.781)?;
-    key(state, KEY_SPACE, false)?;
+    key(state, keys.jump, false)?;
     wait_until(state, start, 18.031)
 }
 
-fn post_ascension(app: &AppHandle, state: &AppState, config: &AppConfig) -> SequenceResult {
-    tap(state, KEY_X, 35)?;
+fn post_ascension(
+    app: &AppHandle,
+    state: &AppState,
+    config: &AppConfig,
+    keys: AppliedGameKeys,
+) -> SequenceResult {
+    tap(state, keys.ascension, 35)?;
     wait_seconds(state, config.timings.ascension_wait)?;
 
     set_phase(app, state, 2, "后退定位");
@@ -208,11 +212,11 @@ fn post_ascension(app: &AppHandle, state: &AppState, config: &AppConfig) -> Sequ
 
     wait_until(state, start, 4.047)?;
     wait_seconds(state, config.timings.melee_extra_wait)?;
-    key(state, KEY_C, true)?;
+    key(state, keys.melee, true)?;
     wait(state, Duration::from_millis(47))?;
     right_mouse(state, false)?;
     wait(state, Duration::from_millis(31))?;
-    key(state, KEY_C, false)?;
+    key(state, keys.melee, false)?;
 
     wait_until(state, start, 2.109 + config.timings.ads_to_super_wait)?;
     set_phase(app, state, 4, "虚空箭");
@@ -222,7 +226,7 @@ fn post_ascension(app: &AppHandle, state: &AppState, config: &AppConfig) -> Sequ
         config.void_arrow_base,
         10,
     )?;
-    tap(state, KEY_F, 125)?;
+    tap(state, keys.super_ability, 125)?;
     wait_seconds(state, config.timings.super_wait)?;
 
     set_phase(app, state, 5, "冲刺");
@@ -230,32 +234,32 @@ fn post_ascension(app: &AppHandle, state: &AppState, config: &AppConfig) -> Sequ
     wait_seconds(state, config.timings.sprint_a_time)?;
     key(state, KEY_W, true)?;
     wait(state, Duration::from_millis(78))?;
-    key(state, KEY_LEFT_SHIFT, true)?;
+    key(state, keys.sprint, true)?;
     turn_camera(state, config.sprint_offset(), config.sprint_base, 5)?;
     wait_seconds(state, config.timings.sprint_to_finisher)?;
 
     set_phase(app, state, 6, "终结");
     for index in 0..4 {
-        key(state, KEY_G, true)?;
+        key(state, keys.finisher, true)?;
         wait(state, Duration::from_millis(140))?;
-        key(state, KEY_G, false)?;
+        key(state, keys.finisher, false)?;
         if index < 3 {
             wait(state, Duration::from_millis(60))?;
         }
     }
     key(state, KEY_A, false)?;
     key(state, KEY_W, false)?;
-    key(state, KEY_LEFT_SHIFT, false)?;
-    wait_seconds(state, config.timings.finisher_wait)
+    key(state, keys.sprint, false)
 }
 
 pub fn execute(app: &AppHandle, state: &Arc<AppState>, config: &AppConfig) -> SequenceResult {
+    let keys = config.game_keys.applied().map_err(SequenceError::Input)?;
     let result = (|| {
         set_phase(app, state, 0, "进场准备");
-        pre_ascension(app, state)?;
-        post_ascension(app, state, config)
+        pre_ascension(app, state, keys)?;
+        post_ascension(app, state, config, keys)
     })();
-    input::release_all();
+    input::release_all(&keys.all());
     result
 }
 

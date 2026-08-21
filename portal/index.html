@@ -73,10 +73,10 @@
           <div class="console-window" data-preview="light">
             <div class="console-header">
               <span class="console-brand">D2</span>
-              <span class="console-title"><strong>Morgath Kick</strong><small>动作校准台</small></span>
+              <span class="console-title"><strong>Morgath Kick</strong></span>
               <span class="console-runtime"><i></i><span><strong>就绪</strong><small>参数已就绪，按 F8 启动</small></span></span>
               <span class="console-resolution"><small>自动识别</small><strong>1920 × 1080</strong></span>
-              <span class="console-actions"><span>深色</span><span>Overlay</span><b>启动 <kbd>F8</kbd></b></span>
+              <span class="console-actions"><span>深色</span><span>悬浮窗</span><b>启动 <kbd>F8</kbd></b></span>
             </div>
             <div class="console-body">
               <div class="console-phase">
@@ -93,7 +93,7 @@
               </div>
               <div class="console-columns">
                 <section class="console-panel">
-                  <div class="panel-heading"><span>01</span><div><h3>显示与灵敏度</h3><p>确认游戏画布，再换算鼠标移动量。</p></div></div>
+                  <div class="panel-heading"><div><h3>显示与灵敏度</h3><p>确认游戏画布，再换算鼠标移动量。</p></div></div>
                   <div class="segmented"><b>自动识别</b><span>手动指定</span></div>
                   <div class="resolution-card"><small>已识别 Destiny 2 客户区</small><strong>1920 × 1080</strong></div>
                   <h4>游戏内设置 <small>参考 15 / 1.00</small></h4>
@@ -102,27 +102,27 @@
                 </section>
 
                 <section class="console-panel aiming-panel">
-                  <div class="panel-heading"><span>02</span><div><h3>瞄准偏移</h3><p>修正虚空箭落点与冲刺朝向。</p></div></div>
+                  <div class="panel-heading"><div><h3>瞄准偏移</h3><p>修正虚空箭落点与冲刺朝向。</p></div></div>
                   <div class="vector-card"><span>虚空箭</span><b>X -300 · Y 81</b><i></i></div>
                   <div class="offset-card selected"><span><strong>首次 ADS</strong><small>近战前的主瞄准移动</small></span><b>-2600, 50</b><div class="field-grid"><label>X 基准<em>-2600</em></label><label>Y 基准<em>50</em></label></div></div>
                   <div class="offset-card"><span><strong>虚空箭落点</strong><small>在参考落点上微调</small></span><b>-300, 81</b><div class="field-grid"><label>X 微调<em>0</em></label><label>Y 微调<em>0</em></label></div></div>
                 </section>
 
                 <section class="console-panel">
-                  <div class="panel-heading"><span>03</span><div><h3>动作时序</h3><p>调整每段等待，F10 随时可停。</p></div></div>
+                  <div class="panel-heading"><div><h3>动作时序</h3><p>调整每段等待，F10 随时可停。</p></div></div>
                   <div class="timing-grid">
                     <label>飞升后等待<b>1.6 <small>秒</small></b><span>X 飞升至后退定位</span></label>
                     <label>近战额外等待<b>0.5 <small>秒</small></b><span>ADS 到 C 近战追加</span></label>
                     <label>ADS 至超能<b>2.5 <small>秒</small></b><span>从按下 ADS 起计算</span></label>
                     <label>超能后等待<b>1.8 <small>秒</small></b><span>F 释放后至冲刺</span></label>
                     <label>冲刺侧移时间<b>0.1 <small>秒</small></b><span>A 先行按下时长</span></label>
-                    <label>终结后等待<b>3.0 <small>秒</small></b><span>四次 G 后的收尾时间</span></label>
+                    <label>冲刺至终结<b>0.0 <small>秒</small></b><span>镜头微调后附加</span></label>
                   </div>
                   <div class="safety-card"><i></i><span><strong>全程可安全中止</strong><small>按 F10 后，程序会停止并释放已按下的键位。</small></span></div>
                 </section>
               </div>
             </div>
-            <div class="console-footer"><span>固定键位　WASD　Shift　Space　E　2　X　C　F　G × 4</span><strong><i></i> 设置已保存</strong></div>
+            <div class="console-footer"><span>使用说明　　按键设置</span><strong><i></i> 设置已保存</strong></div>
           </div>
         </div>
       </section>
@@ -139,7 +139,7 @@
           <article><span>01</span><h3>底层重构</h3><p>在他人项目基础上重新整理架构，让执行、配置和界面各自负责明确的部分。</p></article>
           <article><span>02</span><h3>体积更小</h3><p>使用 Tauri 与 Rust 承载桌面端和动作执行，保留必要能力，减少程序负担。</p></article>
           <article><span>03</span><h3>GUI 更顺手</h3><p>设置、运行状态、快捷键和停止入口集中在一个窗口，改值不必来回找配置。</p></article>
-          <article><span>04</span><h3>参数更多</h3><p>分辨率、灵敏度、三组瞄准偏移和七项等待时间都可以在界面中调整。</p></article>
+          <article><span>04</span><h3>参数更多</h3><p>分辨率、灵敏度、三组瞄准偏移、六项等待时间和按键映射都可以在界面中调整。</p></article>
         </div>
       </section>
 

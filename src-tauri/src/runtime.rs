@@ -47,9 +47,13 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(config: AppConfig) -> Self {
+        let start_hotkey = config.hotkeys.start.clone();
         Self {
             config: Mutex::new(config),
-            runtime: Mutex::new(RuntimeSnapshot::default()),
+            runtime: Mutex::new(RuntimeSnapshot {
+                message: format!("参数已就绪，按 {start_hotkey} 启动"),
+                ..RuntimeSnapshot::default()
+            }),
             running: AtomicBool::new(false),
             cancel: AtomicBool::new(false),
         }

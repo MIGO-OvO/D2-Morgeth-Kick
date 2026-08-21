@@ -14,16 +14,28 @@ import {
 } from "./api";
 import type {
   AppConfig,
+  GameKeyConfig,
+  HotkeyConfig,
   ResolutionInfo,
   RuntimeSnapshot,
   RuntimeStatus,
   TimingConfig,
 } from "./types";
+import {
+  buildHotkey,
+  formatHotkey,
+  formatKey,
+  gameKeyOptions,
+  hotkeyOptions,
+  parseHotkey,
+  type HotkeyModifier,
+} from "./keyboard";
 import { applyTheme, resolveTheme, THEME_STORAGE_KEY, type Theme } from "./theme";
 
 const phases = ["进场准备", "飞升", "后退定位", "ADS 近战", "虚空箭", "冲刺", "终结"];
 type WorkspaceTab = "display" | "aim" | "timing";
 type SaveState = "idle" | "saving" | "saved" | "error";
+type OpenPanel = "guide" | "keys" | null;
 
 const statusLabels: Record<RuntimeStatus, string> = {
   ready: "就绪",
@@ -34,7 +46,7 @@ const statusLabels: Record<RuntimeStatus, string> = {
   error: "发生错误",
 };
 
-function Icon({ name }: { name: "play" | "stop" | "display" | "target" | "clock" | "check" | "refresh" | "sun" | "moon" }) {
+function Icon({ name }: { name: "play" | "stop" | "display" | "target" | "clock" | "check" | "refresh" | "sun" | "moon" | "help" | "keyboard" | "close" | "reset" }) {
   const paths: Record<typeof name, ReactNode> = {
     play: <path d="m9 7 8 5-8 5V7Z" />,
     stop: <path d="M8 8h8v8H8z" />,
@@ -45,8 +57,89 @@ function Icon({ name }: { name: "play" | "stop" | "display" | "target" | "clock"
     refresh: <><path d="M20 7v5h-5" /><path d="M18.5 16a7 7 0 1 1 .2-8.2L20 12" /></>,
     sun: <><circle cx="12" cy="12" r="3.5" /><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
     moon: <path d="M20 15.2A8.5 8.5 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z" />,
+    help: <><circle cx="12" cy="12" r="9" /><path d="M9.8 9a2.3 2.3 0 0 1 4.4 1c0 1.8-2.2 2-2.2 3.7M12 17.5h.01" /></>,
+    keyboard: <><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M7 10h.01M11 10h.01M15 10h.01M18 10h.01M7 14h7m2 0h2" /></>,
+    close: <path d="m7 7 10 10M17 7 7 17" />,
+    reset: <><path d="M4 4v6h6" /><path d="M5.5 15a7 7 0 1 0 .2-8.2L4 10" /></>,
   };
   return <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>;
+}
+
+interface AppDialogProps {
+  title: string;
+  description: string;
+  onClose: () => void;
+  children: ReactNode;
+  wide?: boolean;
+}
+
+function AppDialog({ title, description, onClose, children, wide = false }: AppDialogProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+  }, []);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      className={`app-dialog${wide ? " wide" : ""}`}
+      aria-labelledby="dialog-title"
+      aria-describedby="dialog-description"
+      onCancel={(event) => { event.preventDefault(); onClose(); }}
+      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
+    >
+      <div className="dialog-heading">
+        <div>
+          <h2 id="dialog-title">{title}</h2>
+          <p id="dialog-description">{description}</p>
+        </div>
+        <button className="dialog-close" type="button" onClick={onClose} aria-label="关闭"><Icon name="close" /></button>
+      </div>
+      {children}
+    </dialog>
+  );
+}
+
+interface HotkeyFieldProps {
+  label: string;
+  value: string;
+  disabled: boolean;
+  onChange: (value: string) => void;
+}
+
+function HotkeyField({ label, value, disabled, onChange }: HotkeyFieldProps) {
+  const parsed = parseHotkey(value);
+  const modifierLabels: Array<[HotkeyModifier, string]> = [
+    ["Control", "Ctrl"],
+    ["Shift", "Shift"],
+    ["Alt", "Alt"],
+    ["Super", "Win"],
+  ];
+  const updateModifier = (modifier: HotkeyModifier, checked: boolean) => {
+    const next = new Set(parsed.modifiers);
+    if (checked) next.add(modifier);
+    else next.delete(modifier);
+    onChange(buildHotkey(parsed.primary, next));
+  };
+
+  return (
+    <fieldset className="hotkey-field" disabled={disabled}>
+      <legend>{label}</legend>
+      <div className="modifier-row">
+        {modifierLabels.map(([modifier, text]) => (
+          <label key={modifier}>
+            <input type="checkbox" checked={parsed.modifiers.has(modifier)} onChange={(event) => updateModifier(modifier, event.target.checked)} />
+            <span>{text}</span>
+          </label>
+        ))}
+      </div>
+      <select value={parsed.primary} onChange={(event) => onChange(buildHotkey(event.target.value, parsed.modifiers))} aria-label={`${label}主键`}>
+        {hotkeyOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+    </fieldset>
+  );
 }
 
 interface NumberFieldProps {
@@ -124,9 +217,9 @@ function VectorEditor({
 }
 
 function AimPreview({ label, value }: { label: string; value: [number, number] }) {
-  const max = Math.max(Math.abs(value[0]), Math.abs(value[1]), 1);
-  const x2 = 80 + (value[0] / max) * 48;
-  const y2 = 50 + (value[1] / max) * 30;
+  const clamp = (input: number) => Math.max(-1, Math.min(1, input));
+  const x2 = 80 + clamp(value[0] / 600) * 48;
+  const y2 = 50 + clamp(value[1] / 180) * 30;
   return (
     <figure className="aim-preview">
       <figcaption>
@@ -152,6 +245,7 @@ export default function App() {
   const [tab, setTab] = useState<WorkspaceTab>("display");
   const [selectedVector, setSelectedVector] = useState<"ads" | "void" | "sprint">("void");
   const [theme, setTheme] = useState<Theme>(resolveTheme);
+  const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
   const readyRef = useRef(false);
   const applied = useMemo(() => calculateAppliedOffsets(config), [config]);
   const running = ["running", "stopping"].includes(snapshot.status);
@@ -162,6 +256,12 @@ export default function App() {
   const updateTiming = <K extends keyof TimingConfig>(key: K, value: TimingConfig[K]) => {
     setConfig((current) => ({ ...current, timings: { ...current.timings, [key]: value } }));
   };
+  const updateHotkey = <K extends keyof HotkeyConfig>(key: K, value: HotkeyConfig[K]) => {
+    setConfig((current) => ({ ...current, hotkeys: { ...current.hotkeys, [key]: value } }));
+  };
+  const updateGameKey = <K extends keyof GameKeyConfig>(key: K, value: GameKeyConfig[K]) => {
+    setConfig((current) => ({ ...current, gameKeys: { ...current.gameKeys, [key]: value } }));
+  };
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -171,6 +271,7 @@ export default function App() {
         setSnapshot(nextSnapshot);
         setResolution(nextResolution);
         readyRef.current = true;
+        if (!nextConfig.usageGuideSeen) setOpenPanel("guide");
       })
       .catch((reason: unknown) => {
         console.error("Failed to initialize the app", reason);
@@ -235,7 +336,7 @@ export default function App() {
     } catch (reason) {
       console.error("Failed to toggle the overlay", reason);
       updateConfig("overlayVisible", !next);
-      setError("Overlay 切换失败。请关闭后重新打开程序，再试一次。");
+      setError("悬浮窗切换失败。请关闭后重新打开程序，再试一次。");
     }
   };
 
@@ -266,6 +367,31 @@ export default function App() {
     : selectedVector === "void"
       ? { label: "虚空箭", value: applied.voidArrow }
       : { label: "冲刺", value: applied.sprint };
+  const runtimeMessage = snapshot.status === "ready"
+    ? `参数已就绪，按 ${formatHotkey(config.hotkeys.start)} 启动`
+    : running ? snapshot.phaseName : snapshot.message;
+  const closeGuide = () => {
+    if (!config.usageGuideSeen) updateConfig("usageGuideSeen", true);
+    setOpenPanel(null);
+  };
+  const openKeysFromGuide = () => {
+    if (!config.usageGuideSeen) updateConfig("usageGuideSeen", true);
+    setOpenPanel("keys");
+  };
+  const resetKeys = () => {
+    updateConfig("hotkeys", structuredClone(defaultConfig.hotkeys));
+    updateConfig("gameKeys", structuredClone(defaultConfig.gameKeys));
+  };
+  const gameKeyRows: Array<[keyof GameKeyConfig, string, string]> = [
+    ["sprint", "切换疾跑", "Shift"],
+    ["jump", "跳跃", "Space"],
+    ["interact", "插旗 / 交互", "E"],
+    ["weaponSlot2", "切换到 2 号位武器", "2"],
+    ["melee", "近战", "C"],
+    ["ascension", "飞升", "X"],
+    ["superAbility", "超能", "F"],
+    ["finisher", "终结技", "G"],
+  ];
 
   return (
     <div className="app-shell">
@@ -274,7 +400,6 @@ export default function App() {
           <div className="brand-mark" aria-hidden="true">D2</div>
           <div>
             <h1>Morgath Kick</h1>
-            <p>动作校准台</p>
           </div>
         </div>
 
@@ -282,7 +407,7 @@ export default function App() {
           <span className={`status-dot ${snapshot.status}`} />
           <div>
             <strong>{statusLabels[snapshot.status]}</strong>
-            <span>{running ? snapshot.phaseName : snapshot.message}</span>
+            <span>{runtimeMessage}</span>
           </div>
         </div>
         <span className="sr-only" role="status" aria-live="polite">{statusLabels[snapshot.status]}，{snapshot.phaseName}</span>
@@ -299,13 +424,13 @@ export default function App() {
           <label className="switch-control">
             <input type="checkbox" checked={config.overlayVisible} onChange={toggleOverlay} />
             <span className="switch-track" />
-            <span>Overlay</span>
+            <span>悬浮窗</span>
           </label>
           <button className="button secondary stop-button" type="button" onClick={() => runAction("stop")} disabled={!running}>
-            <Icon name="stop" />停止 <kbd>F10</kbd>
+            <Icon name="stop" />停止 <kbd>{formatHotkey(config.hotkeys.stop)}</kbd>
           </button>
           <button className="button primary" type="button" onClick={() => runAction("start")} disabled={running}>
-            <Icon name="play" />启动 <kbd>F8</kbd>
+            <Icon name="play" />启动 <kbd>{formatHotkey(config.hotkeys.start)}</kbd>
           </button>
         </div>
       </header>
@@ -352,7 +477,7 @@ export default function App() {
           <section className={`calibration-column ${tab === "display" ? "mobile-active" : ""}`} aria-labelledby="display-title">
             <div className="column-heading">
               <span className="column-icon"><Icon name="display" /></span>
-              <div><span className="column-index">01</span><h2 id="display-title">显示与灵敏度</h2><p>确认游戏画面尺寸，再换算鼠标移动量。</p></div>
+              <div><h2 id="display-title">显示与灵敏度</h2><p>确认游戏画面尺寸，再换算鼠标移动量。</p></div>
             </div>
             <div className="segment-control" role="group" aria-label="分辨率来源">
               <button type="button" className={config.resolutionMode === "auto" ? "active" : ""} aria-pressed={config.resolutionMode === "auto"} onClick={() => updateConfig("resolutionMode", "auto")}>自动识别</button>
@@ -383,7 +508,7 @@ export default function App() {
           <section className={`calibration-column ${tab === "aim" ? "mobile-active" : ""}`} aria-labelledby="aim-title">
             <div className="column-heading">
               <span className="column-icon"><Icon name="target" /></span>
-              <div><span className="column-index">02</span><h2 id="aim-title">瞄准偏移</h2><p>修正虚空箭落点与冲刺朝向。</p></div>
+              <div><h2 id="aim-title">瞄准偏移</h2><p>修正虚空箭落点与冲刺朝向。</p></div>
             </div>
             <AimPreview label={selectedPreview.label} value={selectedPreview.value} />
             <VectorEditor
@@ -420,35 +545,80 @@ export default function App() {
           <section className={`calibration-column ${tab === "timing" ? "mobile-active" : ""}`} aria-labelledby="timing-title">
             <div className="column-heading">
               <span className="column-icon"><Icon name="clock" /></span>
-              <div><span className="column-index">03</span><h2 id="timing-title">动作时序</h2><p>调整每段等待，F10 随时可停。</p></div>
+              <div><h2 id="timing-title">动作时序</h2><p>调整每段等待，{formatHotkey(config.hotkeys.stop)} 随时可停。</p></div>
             </div>
             <div className="timing-list">
-              <NumberField label="飞升后等待" value={config.timings.ascensionWait} min={0} max={10} step={0.05} unit="秒" onChange={(value) => updateTiming("ascensionWait", value)} hint="X 飞升至后退定位" />
-              <NumberField label="近战额外等待" value={config.timings.meleeExtraWait} min={0} max={5} step={0.05} unit="秒" onChange={(value) => updateTiming("meleeExtraWait", value)} hint="ADS 到 C 近战前追加" />
+              <NumberField label="飞升后等待" value={config.timings.ascensionWait} min={0} max={10} step={0.05} unit="秒" onChange={(value) => updateTiming("ascensionWait", value)} hint={`${formatKey(config.gameKeys.ascension)} 飞升至后退定位`} />
+              <NumberField label="近战额外等待" value={config.timings.meleeExtraWait} min={0} max={5} step={0.05} unit="秒" onChange={(value) => updateTiming("meleeExtraWait", value)} hint={`ADS 到 ${formatKey(config.gameKeys.melee)} 近战前追加`} />
               <NumberField label="ADS 至超能" value={config.timings.adsToSuperWait} min={0} max={10} step={0.05} unit="秒" onChange={(value) => updateTiming("adsToSuperWait", value)} hint="从按下 ADS 起计算" />
-              <NumberField label="超能后等待" value={config.timings.superWait} min={0} max={10} step={0.05} unit="秒" onChange={(value) => updateTiming("superWait", value)} hint="F 释放后至冲刺" />
+              <NumberField label="超能后等待" value={config.timings.superWait} min={0} max={10} step={0.05} unit="秒" onChange={(value) => updateTiming("superWait", value)} hint={`${formatKey(config.gameKeys.superAbility)} 释放后至冲刺`} />
               <NumberField label="冲刺侧移时间" value={config.timings.sprintATime} min={0} max={3} step={0.01} unit="秒" onChange={(value) => updateTiming("sprintATime", value)} hint="A 先行按下时长" />
               <NumberField label="冲刺至终结" value={config.timings.sprintToFinisher} min={0} max={5} step={0.05} unit="秒" onChange={(value) => updateTiming("sprintToFinisher", value)} hint="镜头微调后附加" />
-              <NumberField label="终结后等待" value={config.timings.finisherWait} min={0} max={15} step={0.1} unit="秒" onChange={(value) => updateTiming("finisherWait", value)} hint="四次 G 后的收尾时间" />
             </div>
             <div className="safety-card">
               <div className="safety-icon"><Icon name="stop" /></div>
-              <div><strong>全程可安全中止</strong><p>按 F10 后，程序会在当前短步骤结束前停止，并释放 W/A/S/D、Shift、Space、E/X/C/F/G 与鼠标右键。</p></div>
+              <div><strong>全程可安全中止</strong><p>按 {formatHotkey(config.hotkeys.stop)} 后，程序会在当前短步骤结束前停止，并释放移动键、已映射操作键与鼠标右键。</p></div>
             </div>
           </section>
         </div>
       </main>
 
       <footer className="app-footer">
-        <div className="fixed-keys">
-          <span>固定键位</span>
-          <kbd>WASD</kbd><kbd>Shift</kbd><kbd>Space</kbd><kbd>E</kbd><kbd>2</kbd><kbd>X</kbd><kbd>C</kbd><kbd>F</kbd><kbd>G × 4</kbd>
+        <div className="footer-actions">
+          <button type="button" onClick={() => setOpenPanel("guide")}><Icon name="help" />使用说明</button>
+          <button type="button" onClick={() => setOpenPanel("keys")}><Icon name="keyboard" />按键设置</button>
         </div>
         <div className={`save-indicator ${saveState}`} aria-live="polite">
           <span />
           {saveState === "saving" ? "正在保存" : saveState === "error" ? "保存失败" : "设置已保存"}
         </div>
       </footer>
+
+      {openPanel === "guide" && (
+        <AppDialog title="开始前请确认" description="完成以下准备后，回到游戏直接按启动热键。" onClose={closeGuide}>
+          <ol className="usage-steps">
+            <li><span>1</span><div><strong>装备运动强化模组</strong><p>腿部护甲装备 3 个运动强化模组。</p></div></li>
+            <li><span>2</span><div><strong>使用指定棱镜配置</strong><p>装备棱镜分支职业，选择冰飞镖近战、虚空箭超能和飞升星相。</p></div></li>
+            <li><span>3</span><div><strong>设置视野范围</strong><p>将游戏内 FOV 改为 100。</p></div></li>
+            <li><span>4</span><div><strong>保持角色与准星不动</strong><p>进入游戏后不要移动角色或挪动准星，直接按 <kbd>{formatHotkey(config.hotkeys.start)}</kbd> 启动。</p></div></li>
+          </ol>
+          <div className="dialog-note">首次使用还请核对按键映射；WASD 移动键无需设置。</div>
+          <div className="dialog-actions">
+            <button className="button secondary" type="button" onClick={openKeysFromGuide}><Icon name="keyboard" />检查按键设置</button>
+            <button className="button primary" type="button" onClick={closeGuide}>我已完成准备</button>
+          </div>
+        </AppDialog>
+      )}
+
+      {openPanel === "keys" && (
+        <AppDialog title="按键设置" description="修改程序启停热键和游戏内操作映射；改动会自动保存。" onClose={() => setOpenPanel(null)} wide>
+          {running && <div className="settings-warning" role="status">动作运行期间不能修改按键。请先停止当前流程。</div>}
+          <section className="key-section" aria-labelledby="hotkey-settings-title">
+            <div className="settings-section-heading">
+              <div><h3 id="hotkey-settings-title">程序热键</h3><p>可组合 Ctrl、Shift、Alt 或 Win；启动与停止不能相同。</p></div>
+              <button className="text-button" type="button" onClick={resetKeys} disabled={running}><Icon name="reset" />恢复默认</button>
+            </div>
+            <div className="hotkey-grid">
+              <HotkeyField label="启动流程" value={config.hotkeys.start} disabled={running} onChange={(value) => updateHotkey("start", value)} />
+              <HotkeyField label="停止流程" value={config.hotkeys.stop} disabled={running} onChange={(value) => updateHotkey("stop", value)} />
+            </div>
+          </section>
+          <section className="key-section" aria-labelledby="game-key-settings-title">
+            <div className="settings-section-heading"><div><h3 id="game-key-settings-title">游戏内操作</h3><p>WASD 固定用于移动，无需设置；ADS 固定使用鼠标右键。</p></div></div>
+            <div className="game-key-grid">
+              {gameKeyRows.map(([key, label, fallback]) => (
+                <label className="key-select-row" key={key}>
+                  <span><strong>{label}</strong><small>默认 {fallback}</small></span>
+                  <select value={config.gameKeys[key]} disabled={running} onChange={(event) => updateGameKey(key, event.target.value)}>
+                    {gameKeyOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
+              ))}
+            </div>
+          </section>
+          <div className="dialog-actions"><button className="button primary" type="button" onClick={() => setOpenPanel(null)}>完成</button></div>
+        </AppDialog>
+      )}
     </div>
   );
 }

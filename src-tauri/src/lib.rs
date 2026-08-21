@@ -5,11 +5,59 @@ mod resolution;
 mod runtime;
 
 use std::sync::{atomic::Ordering, Arc};
-use tauri::{Manager, State};
-use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut, ShortcutState};
+use tauri::{Emitter, Manager, State};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use config::AppConfig;
 use runtime::{AppState, RuntimeSnapshot, RuntimeStatus};
+
+fn register_shortcuts(app: &tauri::AppHandle, shortcuts: [Shortcut; 2]) -> Result<(), String> {
+    let manager = app.global_shortcut();
+    let mut registered = Vec::new();
+    for shortcut in shortcuts {
+        if let Err(error) = manager.register(shortcut) {
+            for registered_shortcut in registered {
+                let _ = manager.unregister(registered_shortcut);
+            }
+            return Err(format!("无法注册全局热键 {shortcut}：{error}"));
+        }
+        registered.push(shortcut);
+    }
+    Ok(())
+}
+
+fn restore_shortcuts(app: &tauri::AppHandle, shortcuts: [Shortcut; 2]) {
+    let manager = app.global_shortcut();
+    for shortcut in shortcuts {
+        if !manager.is_registered(shortcut) {
+            let _ = manager.register(shortcut);
+        }
+    }
+}
+
+fn replace_shortcuts(
+    app: &tauri::AppHandle,
+    old_shortcuts: [Shortcut; 2],
+    new_shortcuts: [Shortcut; 2],
+) -> Result<(), String> {
+    if old_shortcuts == new_shortcuts {
+        return Ok(());
+    }
+    let manager = app.global_shortcut();
+    for shortcut in old_shortcuts {
+        if manager.is_registered(shortcut) {
+            if let Err(error) = manager.unregister(shortcut) {
+                restore_shortcuts(app, old_shortcuts);
+                return Err(format!("无法注销原有全局热键 {shortcut}：{error}"));
+            }
+        }
+    }
+    if let Err(error) = register_shortcuts(app, new_shortcuts) {
+        restore_shortcuts(app, old_shortcuts);
+        return Err(error);
+    }
+    Ok(())
+}
 
 #[tauri::command]
 fn get_config(state: State<'_, Arc<AppState>>) -> AppConfig {
@@ -27,11 +75,23 @@ fn save_config(
     config: AppConfig,
 ) -> Result<AppConfig, String> {
     config.validate()?;
-    config::save(&app, &config)?;
+    let old_config = state
+        .config
+        .lock()
+        .unwrap_or_else(|poison| poison.into_inner())
+        .clone();
+    let old_shortcuts = old_config.hotkeys.shortcuts()?;
+    let new_shortcuts = config.hotkeys.shortcuts()?;
+    replace_shortcuts(&app, old_shortcuts, new_shortcuts)?;
+    if let Err(error) = config::save(&app, &config) {
+        let _ = replace_shortcuts(&app, new_shortcuts, old_shortcuts);
+        return Err(error);
+    }
     *state
         .config
         .lock()
         .unwrap_or_else(|poison| poison.into_inner()) = config.clone();
+    let _ = app.emit("config-state", &config);
     Ok(config)
 }
 
@@ -124,20 +184,24 @@ fn set_overlay_visible(app: tauri::AppHandle, visible: bool) -> Result<bool, Str
 }
 
 pub fn run() {
-    let f8 = Shortcut::new(None, Code::F8);
-    let f10 = Shortcut::new(None, Code::F10);
-    let shortcuts = [f8, f10];
     let global_shortcut = tauri_plugin_global_shortcut::Builder::new()
-        .with_shortcuts(shortcuts)
-        .expect("无法注册 F8/F10 全局热键")
         .with_handler(|app, shortcut, event| {
             if event.state() != ShortcutState::Pressed {
                 return;
             }
             let state = app.state::<Arc<AppState>>().inner().clone();
-            if shortcut.matches(Modifiers::empty(), Code::F8) {
+            let shortcuts = state
+                .config
+                .lock()
+                .unwrap_or_else(|poison| poison.into_inner())
+                .hotkeys
+                .shortcuts();
+            let Ok([start_shortcut, stop_shortcut]) = shortcuts else {
+                return;
+            };
+            if *shortcut == start_shortcut {
                 let _ = start_internal(app.clone(), state);
-            } else if shortcut.matches(Modifiers::empty(), Code::F10) {
+            } else if *shortcut == stop_shortcut {
                 stop_internal(app, &state);
             }
         })
@@ -148,7 +212,15 @@ pub fn run() {
         .setup(|app| {
             let config = config::load(app.handle()).unwrap_or_else(|_| AppConfig::default());
             let overlay_visible = config.overlay_visible;
-            app.manage(Arc::new(AppState::new(config)));
+            let shortcuts = config.hotkeys.shortcuts()?;
+            let state = Arc::new(AppState::new(config));
+            app.manage(Arc::clone(&state));
+            if let Err(error) = register_shortcuts(app.handle(), shortcuts) {
+                state.update(app.handle(), |runtime| {
+                    runtime.status = RuntimeStatus::Error;
+                    runtime.message = error;
+                });
+            }
             if let Some(overlay) = app.get_webview_window("overlay") {
                 overlay.set_ignore_cursor_events(true)?;
                 if !overlay_visible {
@@ -163,7 +235,15 @@ pub fn run() {
             {
                 let state = window.state::<Arc<AppState>>().inner().clone();
                 state.cancel.store(true, Ordering::Release);
-                input::release_all();
+                let configured_keys = state
+                    .config
+                    .lock()
+                    .unwrap_or_else(|poison| poison.into_inner())
+                    .game_keys
+                    .applied()
+                    .map(|keys| keys.all())
+                    .unwrap_or_default();
+                input::release_all(&configured_keys);
                 window.app_handle().exit(0);
             }
         })

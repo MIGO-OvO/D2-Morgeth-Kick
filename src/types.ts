@@ -14,7 +14,22 @@ export interface TimingConfig {
   superWait: number;
   sprintATime: number;
   sprintToFinisher: number;
-  finisherWait: number;
+}
+
+export interface HotkeyConfig {
+  start: string;
+  stop: string;
+}
+
+export interface GameKeyConfig {
+  sprint: string;
+  jump: string;
+  interact: string;
+  weaponSlot2: string;
+  melee: string;
+  ascension: string;
+  superAbility: string;
+  finisher: string;
 }
 
 export interface AppConfig {
@@ -31,7 +46,10 @@ export interface AppConfig {
   sprintBase: [number, number];
   sprintTrim: [number, number];
   timings: TimingConfig;
+  hotkeys: HotkeyConfig;
+  gameKeys: GameKeyConfig;
   overlayVisible: boolean;
+  usageGuideSeen: boolean;
 }
 
 export interface AppliedOffsets {
