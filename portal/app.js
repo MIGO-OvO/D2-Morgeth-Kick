@@ -1,4 +1,4 @@
-const pageThemeKey = "d2-ogre-kick-portal-theme";
+const pageThemeKey = "d2-morgath-kick-portal-theme";
 const pageThemeButton = document.querySelector(".site-theme-toggle");
 const themeColor = document.querySelector('meta[name="theme-color"]');
 const preview = document.querySelector(".console-window");
@@ -51,7 +51,7 @@ fetch("https://api.github.com/repos/MIGO-OvO/D2-Morgath-Kick/releases/latest", {
   .then((release) => {
     const version = document.querySelector("#release-version");
     if (version && release.tag_name) version.textContent = release.tag_name;
-    const asset = release.assets?.find((item) => item.name === "D2-Ogre-Kick-Windows-x64-setup.exe");
+    const asset = release.assets?.find((item) => item.name === "D2-Morgath-Kick-Windows-x64-setup.exe");
     if (asset?.browser_download_url) {
       document.querySelectorAll('a[href*="/releases/latest/download/"]').forEach((link) => {
         link.href = asset.browser_download_url;

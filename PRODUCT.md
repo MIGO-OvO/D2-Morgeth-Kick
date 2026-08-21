@@ -8,11 +8,11 @@ Windows desktop application with a public web portal
 
 ## Users
 
-The primary user runs D2 Ogre Kick beside Destiny 2 on Windows 10 or 11. They want to check the active setup, tune a deterministic keyboard-and-mouse sequence, start it without returning to a terminal, and stop it immediately if the run is wrong.
+The primary user runs D2 Morgath Kick beside Destiny 2 on Windows 10 or 11. They want to check the active setup, tune a deterministic keyboard-and-mouse sequence, start it without returning to a terminal, and stop it immediately if the run is wrong.
 
 ## Product Purpose
 
-D2 Ogre Kick is a compact desktop calibration console for one fixed Ogre Kick action sequence. It gives the operator a visible place to confirm resolution and sensitivity, adjust aiming offsets and timing, follow the current phase, and abort the sequence safely.
+D2 Morgath Kick is a compact desktop calibration console for one fixed Morgath Kick action sequence. It gives the operator a visible place to confirm resolution and sensitivity, adjust aiming offsets and timing, follow the current phase, and abort the sequence safely.
 
 Success means the operator can understand the current configuration at a glance, make a small correction without editing a file, and trust F10 to stop the sequence and release held inputs.
 
@@ -42,7 +42,7 @@ The product turns a hard-coded replay script into an inspectable timing instrume
 
 ## Brand Commitments
 
-The product name is D2 Ogre Kick. The GitHub repository is named `D2-Morgath-Kick`.
+The product name is D2 Morgath Kick. The GitHub repository is named `D2-Morgath-Kick`.
 
 The product speaks in short, direct Chinese. It avoids game-themed hype and does not claim that the sequence succeeds in game. Labels name the setting or action; help text explains the assumption that matters.
 

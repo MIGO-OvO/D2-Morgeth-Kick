@@ -1,5 +1,5 @@
 ---
-name: "D2 Ogre Kick"
+name: "D2 Morgath Kick"
 description: "A calibrated Windows console for inspectable timing, precise tuning, and safe interruption."
 colors:
   action-blue: "#1769e0"
@@ -159,13 +159,13 @@ components:
     width: "100%"
 ---
 
-# Design System: D2 Ogre Kick
+# Design System: D2 Morgath Kick
 
 ## Overview
 
 **Creative North Star: "精密校准台 / The Calibrated Console"**
 
-D2 Ogre Kick feels like a compact instrument placed beside the game: restrained, trustworthy, readable, and immediately operable. It keeps the recognizable character of a Windows utility without copying Windows Settings, using a neutral workbench, blue operational states, tabular calibration values, and a visible seven-stage rail.
+D2 Morgath Kick feels like a compact instrument placed beside the game: restrained, trustworthy, readable, and immediately operable. It keeps the recognizable character of a Windows utility without copying Windows Settings, using a neutral workbench, blue operational states, tabular calibration values, and a visible seven-stage rail.
 
 The desktop console and public portal present light and dark themes as equal expressions of one semantic system. The Overlay is the quietest expression: a read-only safety instrument that exposes status, progress, and the stop action without competing with gameplay.
 

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "D2 Ogre Kick",
+  "productName": "D2 Morgath Kick",
   "version": "0.1.0",
-  "identifier": "dev.d2ogrekick.desktop",
+  "identifier": "dev.d2morgathkick.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "D2 Ogre Kick · 动作校准台",
+        "title": "D2 Morgath Kick · 动作校准台",
         "url": "index.html",
         "width": 1180,
         "height": 760,
@@ -26,7 +26,7 @@
       },
       {
         "label": "overlay",
-        "title": "D2 Ogre Kick Overlay",
+        "title": "D2 Morgath Kick Overlay",
         "url": "index.html?view=overlay",
         "width": 470,
         "height": 62,
@@ -49,7 +49,7 @@
     "active": true,
     "targets": ["nsis"],
     "copyright": "Copyright (c) 2026 MIGO_12",
-    "shortDescription": "D2 Ogre Kick 动作校准台",
+    "shortDescription": "D2 Morgath Kick 动作校准台",
     "longDescription": "检查并调整一套可随时中止的固定键鼠动作序列。"
   }
 }

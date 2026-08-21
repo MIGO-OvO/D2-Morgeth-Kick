@@ -177,5 +177,5 @@ pub fn run() {
             set_overlay_visible,
         ])
         .run(tauri::generate_context!())
-        .expect("启动 D2 Ogre Kick 失败");
+        .expect("启动 D2 Morgath Kick 失败");
 }

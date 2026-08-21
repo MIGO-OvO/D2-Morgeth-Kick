@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-08-21T15:44:00Z",
-  "title": "Design System: D2 Ogre Kick",
+  "title": "Design System: D2 Morgath Kick",
   "extensions": {
     "colorMeta": {
       "action-blue": {
@@ -149,7 +149,7 @@
   ],
   "narrative": {
     "northStar": "精密校准台 / The Calibrated Console",
-    "overview": "D2 Ogre Kick feels like a compact instrument placed beside the game: restrained, trustworthy, readable, and immediately operable. It keeps the recognizable character of a Windows utility without copying Windows Settings, using a neutral workbench, blue operational states, tabular calibration values, and a visible seven-stage rail. The desktop console and public portal present light and dark themes as equal expressions of one semantic system. The Overlay is the quietest expression: a read-only safety instrument that exposes status, progress, and the stop action without competing with gameplay.",
+    "overview": "D2 Morgath Kick feels like a compact instrument placed beside the game: restrained, trustworthy, readable, and immediately operable. It keeps the recognizable character of a Windows utility without copying Windows Settings, using a neutral workbench, blue operational states, tabular calibration values, and a visible seven-stage rail. The desktop console and public portal present light and dark themes as equal expressions of one semantic system. The Overlay is the quietest expression: a read-only safety instrument that exposes status, progress, and the stop action without competing with gameplay.",
     "keyCharacteristics": [
       "Neutral workbench surfaces with crisp one-pixel separation",
       "One blue operational accent supported by explicit text and icon states",

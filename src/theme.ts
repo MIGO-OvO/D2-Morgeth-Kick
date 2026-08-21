@@ -1,6 +1,6 @@
 export type Theme = "light" | "dark";
 
-export const THEME_STORAGE_KEY = "d2-ogre-kick-theme";
+export const THEME_STORAGE_KEY = "d2-morgath-kick-theme";
 
 export function resolveTheme(): Theme {
   const preset = document.documentElement.dataset.theme;

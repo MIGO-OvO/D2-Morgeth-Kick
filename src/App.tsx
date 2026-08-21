@@ -273,7 +273,7 @@ export default function App() {
         <div className="brand-block">
           <div className="brand-mark" aria-hidden="true">D2</div>
           <div>
-            <h1>Ogre Kick</h1>
+            <h1>Morgath Kick</h1>
             <p>动作校准台</p>
           </div>
         </div>

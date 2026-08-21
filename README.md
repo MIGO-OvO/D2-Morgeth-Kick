@@ -1,19 +1,19 @@
-# D2 Ogre Kick
+# D2 Morgath Kick
 
 [![GitHub Pages](https://img.shields.io/badge/产品门户-GitHub%20Pages-1769e0?logo=github)](https://migo-ovo.github.io/D2-Morgath-Kick/)
 [![Latest release](https://img.shields.io/github/v/release/MIGO-OvO/D2-Morgath-Kick?display_name=tag&sort=semver)](https://github.com/MIGO-OvO/D2-Morgath-Kick/releases/latest)
 [![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-1769e0?logo=windows11&logoColor=white)](https://github.com/MIGO-OvO/D2-Morgath-Kick/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-D2 Ogre Kick 是一款 Windows 动作校准工具。它把分辨率、灵敏度、瞄准偏移和动作等待集中在一个窗口里，并通过全局快捷键执行一套固定的键鼠序列。
+D2 Morgath Kick 是一款 Windows 动作校准工具。它基于原项目重构，优化了底层架构，安装体积更小。新的 GUI 把分辨率、灵敏度、瞄准偏移和动作等待集中在一个窗口里，可调整的参数也更多。
 
 这不是自动刷取工具。当前版本不识别 Boss 或玩家状态，也不会自动循环、点击地图或收集掉落。程序只按保存的参数执行一次序列。F10 会中止当前步骤并释放已按下的键位。
 
-[打开产品门户](https://migo-ovo.github.io/D2-Morgath-Kick/) · [下载最新 Windows 安装包](https://github.com/MIGO-OvO/D2-Morgath-Kick/releases/latest/download/D2-Ogre-Kick-Windows-x64-setup.exe)
+[打开产品门户](https://migo-ovo.github.io/D2-Morgath-Kick/) · [下载最新 Windows 安装包](https://github.com/MIGO-OvO/D2-Morgath-Kick/releases/latest/download/D2-Morgath-Kick-Windows-x64-setup.exe)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/app-dark.png">
-  <img src="docs/screenshots/app-light.png" alt="D2 Ogre Kick 动作校准台">
+  <img src="docs/screenshots/app-light.png" alt="D2 Morgath Kick 动作校准台">
 </picture>
 
 ## 功能
@@ -33,20 +33,20 @@ D2 Ogre Kick 是一款 Windows 动作校准工具。它把分辨率、灵敏度�
 - 64 位 Windows 10 或 Windows 11
 - WebView2 Runtime，大多数 Windows 10/11 系统已经安装
 - Destiny 2 使用无边框或窗口模式，以便程序读取客户区尺寸
-- 游戏与 D2 Ogre Kick 使用相同的 Windows 完整性级别
+- 游戏与 D2 Morgath Kick 使用相同的 Windows 完整性级别
 
 序列依赖游戏内按键、FOV、灵敏度和配装。首次使用前请逐项核对设置，并在可控场景中校准。不同 FOV 或鼠标加速会改变实际落点。
 
 ## 安装
 
-从 [Latest Release](https://github.com/MIGO-OvO/D2-Morgath-Kick/releases/latest) 下载 `D2-Ogre-Kick-Windows-x64-setup.exe`，运行安装程序后从开始菜单启动 D2 Ogre Kick。
+从 [Latest Release](https://github.com/MIGO-OvO/D2-Morgath-Kick/releases/latest) 下载 `D2-Morgath-Kick-Windows-x64-setup.exe`，运行安装程序后从开始菜单启动 D2 Morgath Kick。
 
 Windows 可能会在首次运行未签名安装包时显示 SmartScreen 提示。请核对下载地址是否属于本仓库，再决定是否继续。
 
 ## 使用
 
 1. 启动 Destiny 2，并确认窗口模式、FOV、灵敏度和按键设置。
-2. 打开 D2 Ogre Kick，检查自动识别到的分辨率。
+2. 打开 D2 Morgath Kick，检查自动识别到的分辨率。
 3. 按实际情况调整瞄准偏移与等待时间。设置会自动保存。
 4. 让 Destiny 2 回到前台，按 F8 执行一次动作序列。
 5. 需要停止时按 F10。Overlay 会同步显示当前状态。
@@ -126,7 +126,7 @@ D2-Morgath-Kick/
 
 项目使用 [MIT License](LICENSE)。
 
-D2 Ogre Kick 是非官方开源项目，与 Bungie 无关联。Destiny 2 及相关名称归其权利人所有。使用本工具前，请自行确认适用的游戏条款并承担使用风险。
+D2 Morgath Kick 是非官方开源项目，与 Bungie 无关联。Destiny 2 及相关名称归其权利人所有。使用本工具前，请自行确认适用的游戏条款并承担使用风险。
 
 ## 维护者
 
