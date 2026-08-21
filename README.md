@@ -92,6 +92,54 @@ npm run tauri build
 
 NSIS 安装包会出现在 `src-tauri/target/release/bundle/nsis/`。
 
+## 项目架构
+
+D2 Morgath Kick 由三个表面组成：Tauri 2 桌面壳内运行两个 WebView 窗口（主窗口与 Overlay），Rust 核心独占键鼠执行权，`portal/` 是独立的 GitHub Pages 产品门户。
+
+```text
+┌──────────────────────────┐   ┌──────────────────────────┐
+│ 主窗口 (WebView2 · React) │   │ Overlay (WebView2 · React)│
+│ src/App.tsx              │   │ src/OverlayApp.tsx        │
+│ 校准界面 · 七阶段轨道      │   │ 置顶 · 点击穿透 · 只读状态 │
+└────────────┬─────────────┘   └────────────┬─────────────┘
+             │ invoke / listen              │ listen
+             ▼                              ▼
+┌────────────────────────────────────────────────────────────┐
+│ Rust 核心 (src-tauri · Tauri 2)                              │
+│ lib.rs        命令注册、F8/F10 全局热键、窗口生命周期         │
+│ engine.rs     七阶段动作序列，每一步都可被取消                │
+│ runtime.rs    运行状态机，通过 runtime-state 事件广播         │
+│ config.rs     配置校验、持久化、灵敏度换算与偏移计算          │
+│ input.rs      SendInput 键鼠输入与兜底释放                   │
+│ resolution.rs 识别 Destiny 2 窗口并读取客户区尺寸            │
+└────────────┬──────────────────────────────┬────────────────┘
+             │ SendInput / EnumWindows      │ 静态发布
+             ▼                              ▼
+      Destiny 2 游戏窗口           GitHub Pages 门户 (portal/)
+```
+
+### 模块职责
+
+| 模块 | 职责 |
+| --- | --- |
+| `src/`（React 19 + TypeScript + Vite） | 主窗口与 Overlay 的界面层。`api.ts` 封装 Tauri 的 `invoke` / `listen`，并提供浏览器 mock，使 `npm run dev` 可以在没有 Tauri 的情况下开发界面 |
+| `src-tauri/src/lib.rs` | 注册七个 Tauri 命令，挂载 F8 / F10 全局热键，处理主窗口关闭时的取消与输入释放 |
+| `src-tauri/src/engine.rs` | 七阶段动作序列执行器。等待循环每 10ms 检查一次取消标志，镜头移动拆成小步执行，任何结果下都以 `release_all()` 收尾 |
+| `src-tauri/src/runtime.rs` | 以 `Arc<AppState>` 共享配置、状态和原子标志。状态变化通过 `runtime-state` 事件同步到主窗口与 Overlay |
+| `src-tauri/src/config.rs` | `AppConfig` 校验、`settings.json` 读写，以及按参考灵敏度换算 ADS / 腰射距离系数的偏移计算 |
+| `src-tauri/src/input.rs` | Windows `SendInput` 封装：扫描码按键、相对鼠标移动，并统一释放 W/A/S/D、Shift、Space、E/2/X/C/F/G 与鼠标右键 |
+| `src-tauri/src/resolution.rs` | 枚举可见窗口，按标题找到 Destiny 2 并读取客户区尺寸与 DPI，找不到时回退到主显示器尺寸 |
+| `portal/` | 静态 GitHub Pages 门户：产品介绍、界面预览，并通过 GitHub API 指向最新 Release 下载 |
+
+### 执行与状态流
+
+1. Rust 启动时从应用配置目录读取 `settings.json` 并放入 `Arc<AppState>`。
+2. 前端通过 `get_config` / `detect_resolution` 初始化；修改参数后防抖 450ms 调 `save_config`，由 Rust 校验后写回 `settings.json`。
+3. 点击启动或按 F8 时，`running` 原子标志用 `compare_exchange` 防止重复启动，动作引擎在独立线程执行。
+4. 引擎切换阶段时更新快照并广播 `runtime-state`，主窗口与 Overlay 同时刷新状态和进度。
+5. 按 F10 置位取消标志，等待与镜头步骤在 10ms 内响应，状态进入「正在停止」并最终释放全部输入。
+6. 完成、中止或出错后引擎都会调用 `release_all()`；关闭主窗口同样先取消并释放输入再退出。
+
 ## 项目结构
 
 ```text
