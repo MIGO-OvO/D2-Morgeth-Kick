@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-21T15:44:00Z",
+  "title": "Design System: D2 Ogre Kick",
+  "extensions": {
+    "colorMeta": {
+      "action-blue": {
+        "role": "primary",
+        "displayName": "Action Blue",
+        "canonical": "#1769e0",
+        "tonalRamp": ["#07162e", "#0b2a59", "#0f428c", "#1459bd", "#1769e0", "#5b96ec", "#a7c8f6", "#eef5fe"]
+      },
+      "workbench-canvas": {
+        "role": "neutral",
+        "displayName": "Workbench Canvas",
+        "canonical": "#eef0f3",
+        "tonalRamp": ["#17191c", "#2d3034", "#4c5056", "#747981", "#a3a8af", "#c9cdd2", "#e4e7ea", "#f6f7f9"]
+      },
+      "instrument-surface": {
+        "role": "neutral",
+        "displayName": "Instrument Surface",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#17191c", "#303338", "#555960", "#7f848c", "#abb0b7", "#d1d5d9", "#eceef0", "#ffffff"]
+      },
+      "instrument-ink": {
+        "role": "neutral",
+        "displayName": "Instrument Ink",
+        "canonical": "#171a20",
+        "tonalRamp": ["#111318", "#242831", "#3f4652", "#626b79", "#8d96a2", "#b8c0c9", "#dce1e7", "#f5f7f9"]
+      },
+      "safety-green": {
+        "role": "secondary",
+        "displayName": "Safety Green",
+        "canonical": "#16835b",
+        "tonalRamp": ["#061b13", "#0b3827", "#10563c", "#167651", "#23996c", "#58bd94", "#a3ddc7", "#eaf8f2"]
+      },
+      "caution-amber": {
+        "role": "secondary",
+        "displayName": "Caution Amber",
+        "canonical": "#a56400",
+        "tonalRamp": ["#211400", "#432800", "#673e00", "#8c5500", "#b9730d", "#dca34d", "#f2d39c", "#fff5df"]
+      },
+      "stop-red": {
+        "role": "secondary",
+        "displayName": "Stop Red",
+        "canonical": "#bd3038",
+        "tonalRamp": ["#27080b", "#4d1117", "#741c23", "#9d2930", "#c7434b", "#df7d83", "#efb7ba", "#fcedee"]
+      },
+      "overlay-panel": {
+        "role": "neutral",
+        "displayName": "Overlay Charcoal",
+        "canonical": "rgba(19, 24, 31, .97)",
+        "tonalRamp": ["#0d1015", "#13181f", "#242b35", "#3a4451", "#5a6675", "#8792a0", "#bac2cc", "#eef1f5"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Industrial Display",
+        "purpose": "Short portal statements and product positioning only."
+      },
+      "body": {
+        "displayName": "Windows UI Text",
+        "purpose": "Interface explanations, operating context, and normal reading."
+      },
+      "mono": {
+        "displayName": "Instrument Numerals",
+        "purpose": "Coordinates, scale factors, phase counters, and comparable values."
+      }
+    },
+    "shadows": [
+      {
+        "name": "portal-console-ambient",
+        "value": "0 22px 70px rgba(30, 38, 50, .12)",
+        "purpose": "The single broad shadow beneath the portal hero console in light mode."
+      },
+      {
+        "name": "portal-console-ambient-dark",
+        "value": "0 24px 80px rgba(0, 0, 0, .38)",
+        "purpose": "The dark-mode counterpart of the portal hero shadow."
+      },
+      {
+        "name": "overlay-inset",
+        "value": "inset 0 1px 0 rgba(255,255,255,.06), inset 0 -1px 0 rgba(0,0,0,.28)",
+        "purpose": "Internal edge definition without a shadow outside the transparent rounded window."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-state",
+        "value": "140ms ease",
+        "purpose": "Border, background, and text changes on desktop controls."
+      },
+      {
+        "name": "theme-state",
+        "value": "180ms ease",
+        "purpose": "Page and preview color changes between light and dark modes."
+      }
+    ],
+    "breakpoints": [
+      { "name": "compact-control", "value": "540px" },
+      { "name": "portal-mobile", "value": "720px" },
+      { "name": "wrapped-command-bar", "value": "899px" },
+      { "name": "portal-stacked", "value": "1040px" },
+      { "name": "single-panel-workspace", "value": "1100px" },
+      { "name": "reduced-header", "value": "1120px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Starts the sequence or performs the one primary page action.",
+      "html": "<button class=\"ds-button-primary\" type=\"button\">启动 <kbd>F8</kbd></button>",
+      "css": ".ds-button-primary { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 13px; border: 1px solid #1769e0; border-radius: 7px; background: #1769e0; color: #fff; font: 650 13px/1.45 'Segoe UI Variable Text','Microsoft YaHei UI',sans-serif; cursor: pointer; transition: background-color 140ms ease, border-color 140ms ease; } .ds-button-primary:hover { background: #1159c2; } .ds-button-primary:focus-visible { outline: 2px solid #0b65d8; outline-offset: 2px; } .ds-button-primary:disabled { opacity: .42; cursor: not-allowed; } .ds-button-primary kbd { min-width: 23px; height: 21px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; border: 1px solid rgba(255,255,255,.4); border-radius: 4px; background: rgba(255,255,255,.13); color: #fff; font: 650 10px/1 'Segoe UI Variable Text',sans-serif; }"
+    },
+    {
+      "name": "Numeric Field",
+      "kind": "input",
+      "refersTo": "number-field",
+      "description": "A compact calibration value with an adjacent unit.",
+      "html": "<label class=\"ds-field\"><span>视角灵敏度</span><span class=\"ds-number\"><input type=\"number\" value=\"15\"><small>级</small></span></label>",
+      "css": ".ds-field { display: grid; gap: 5px; color: #5d6572; font: 600 11px/1.4 'Segoe UI Variable Text','Microsoft YaHei UI',sans-serif; } .ds-number { min-height: 36px; display: flex; align-items: center; overflow: hidden; border: 1px solid #c9cfd7; border-radius: 6px; background: #fff; } .ds-number:focus-within { border-color: #1769e0; box-shadow: 0 0 0 1px #1769e0; } .ds-number input { width: 100%; height: 34px; padding: 0 9px; border: 0; outline: 0; background: transparent; color: #171a20; font: 400 13px/1.45 'Segoe UI Variable Text',sans-serif; font-variant-numeric: tabular-nums; } .ds-number small { padding-right: 9px; color: #626b78; font-size: 11px; }"
+    },
+    {
+      "name": "Calibration Panel",
+      "kind": "card",
+      "refersTo": "calibration-panel",
+      "description": "The bordered, flat container for one calibration group.",
+      "html": "<section class=\"ds-panel\"><div class=\"ds-panel-icon\">02</div><div><strong>瞄准偏移</strong><p>修正虚空箭落点与冲刺朝向。</p></div></section>",
+      "css": ".ds-panel { display: flex; gap: 11px; padding: 18px; border: 1px solid #dfe3e8; border-radius: 10px; background: #fff; color: #171a20; font-family: 'Segoe UI Variable Text','Microsoft YaHei UI',sans-serif; } .ds-panel-icon { width: 32px; height: 32px; display: grid; place-items: center; flex: none; border-radius: 7px; background: #e9f1fd; color: #1769e0; font-size: 10px; font-weight: 700; } .ds-panel strong { font-size: 15px; } .ds-panel p { margin: 4px 0 0; color: #626b78; font-size: 11px; line-height: 1.5; } .ds-panel:focus-within { outline: 2px solid #0b65d8; outline-offset: 2px; }"
+    },
+    {
+      "name": "Seven-Stage Rail",
+      "kind": "custom",
+      "refersTo": "phase-node-active",
+      "description": "The signature sequence view shared by the desktop app and portal.",
+      "html": "<ol class=\"ds-rail\"><li class=\"ds-active\"><i>1</i><span>进场准备</span></li><li><i>2</i><span>飞升</span></li><li><i>3</i><span>后退定位</span></li><li><i>4</i><span>ADS 近战</span></li><li><i>5</i><span>虚空箭</span></li><li><i>6</i><span>冲刺</span></li><li><i>7</i><span>终结</span></li></ol>",
+      "css": ".ds-rail { display: grid; grid-template-columns: repeat(7,1fr); margin: 0; padding: 0; list-style: none; font: 400 11px/1.4 'Segoe UI Variable Text','Microsoft YaHei UI',sans-serif; } .ds-rail li { position: relative; display: grid; justify-items: center; gap: 7px; color: #626b78; } .ds-rail li::before { content: ''; position: absolute; top: 11px; right: 50%; left: -50%; height: 1px; background: #c9cfd7; } .ds-rail li:first-child::before { display: none; } .ds-rail i { position: relative; z-index: 1; width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid #c9cfd7; border-radius: 50%; background: #fff; font-style: normal; font-size: 10px; font-weight: 700; } .ds-rail .ds-active i { border: 2px solid #1769e0; background: #e9f1fd; color: #1769e0; box-shadow: 0 0 0 3px #fff,0 0 0 4px #b9d4f8; } .ds-rail .ds-active span { color: #171a20; font-weight: 700; }"
+    },
+    {
+      "name": "Overlay Safety Instrument",
+      "kind": "custom",
+      "refersTo": "overlay-instrument",
+      "description": "A fixed dark read-only status strip that keeps stop guidance visible.",
+      "html": "<div class=\"ds-overlay\"><span class=\"ds-overlay-status\"><i></i><b>进场准备</b></span><span class=\"ds-overlay-progress\"><em></em><b>01 / 07</b></span><span class=\"ds-overlay-stop\"><kbd>F10</kbd> 停止</span></div>",
+      "css": ".ds-overlay { width: 420px; height: 62px; display: grid; grid-template-columns: 100px minmax(62px,1fr) 76px; align-items: center; gap: 8px; padding: 0 10px; overflow: hidden; border: 1px solid rgba(148,160,178,.46); border-radius: 10px; background: rgba(19,24,31,.97); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.06),inset 0 -1px 0 rgba(0,0,0,.28); font: 600 10px/1.25 'Segoe UI Variable Text','Microsoft YaHei UI',sans-serif; } .ds-overlay-status,.ds-overlay-progress,.ds-overlay-stop { display: flex; align-items: center; gap: 7px; min-width: 0; white-space: nowrap; } .ds-overlay-status i { width: 9px; height: 9px; flex: none; border-radius: 50%; background: #7d8590; box-shadow: 0 0 0 3px #2a323d; } .ds-overlay-progress em { position: relative; height: 4px; flex: 1; overflow: hidden; border-radius: 2px; background: #3c4552; } .ds-overlay-progress em::before { content: ''; display: block; width: 18%; height: 100%; background: #4c92ee; } .ds-overlay-progress b { font: 400 10px/1 'Cascadia Mono',Consolas,monospace; } .ds-overlay-stop { justify-content: flex-end; } .ds-overlay-stop kbd { min-width: 26px; height: 20px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #525b68; border-radius: 4px; background: #303741; color: #eef1f5; font-size: 9px; box-shadow: 0 1px 0 #101319; } .ds-overlay:focus-within { outline: 2px solid #86b8ff; outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "精密校准台 / The Calibrated Console",
+    "overview": "D2 Ogre Kick feels like a compact instrument placed beside the game: restrained, trustworthy, readable, and immediately operable. It keeps the recognizable character of a Windows utility without copying Windows Settings, using a neutral workbench, blue operational states, tabular calibration values, and a visible seven-stage rail. The desktop console and public portal present light and dark themes as equal expressions of one semantic system. The Overlay is the quietest expression: a read-only safety instrument that exposes status, progress, and the stop action without competing with gameplay.",
+    "keyCharacteristics": [
+      "Neutral workbench surfaces with crisp one-pixel separation",
+      "One blue operational accent supported by explicit text and icon states",
+      "Dense, tabular calibration data organized into inspectable groups",
+      "A visible seven-stage sequence shared across product surfaces",
+      "Paired light and dark themes with a quieter, fixed dark Overlay",
+      "Short, direct Chinese copy and precise Windows utility controls"
+    ],
+    "rules": [
+      { "name": "The One Operational Accent Rule", "body": "Use Action Blue for actionable, current, or selected states, never as ambient decoration.", "section": "colors" },
+      { "name": "The Paired Theme Rule", "body": "Switch semantic roles as a complete light or dark set; do not substitute isolated dark values into a light surface.", "section": "colors" },
+      { "name": "The State Redundancy Rule", "body": "Pair every status color with a label, icon, position, or progress value so meaning never depends on color alone.", "section": "colors" },
+      { "name": "The Numeric Instrument Rule", "body": "Use tabular or monospaced numerals for values that operators compare; keep surrounding prose in the UI family.", "section": "typography" },
+      { "name": "The Border-First Rule", "body": "Establish hierarchy with line weight and tonal layering before adding shadow.", "section": "elevation" },
+      { "name": "The One Ambient Shadow Rule", "body": "Reserve the broad environmental shadow for the portal hero preview; application cards remain grounded and flat.", "section": "elevation" },
+      { "name": "The Inset Overlay Rule", "body": "The Overlay may use inset depth only and must never receive an outer shadow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep calibration values adjacent to the phase or behavior they affect.",
+      "Do use Action Blue for primary action, focus, selection, active progress, and no other purpose.",
+      "Do pair light and dark semantic roles and verify both at common Windows scaling levels.",
+      "Do preserve the visible seven-stage sequence and the explicit F10 safety path.",
+      "Do keep the Overlay read-only, quiet, clipped, and free of outer shadow."
+    ],
+    "donts": [
+      "Don't add neon color, glassmorphism, marketing gradients, or game-themed spectacle.",
+      "Don't use card shadows as the default source of hierarchy in the desktop console.",
+      "Don't claim gameplay success, state recognition, automatic loops, map interaction, or loot collection.",
+      "Don't hide status meaning inside color alone or remove visible keyboard focus.",
+      "Don't turn the Windows utility character into a copy of the Windows Settings interface."
+    ]
+  }
+}

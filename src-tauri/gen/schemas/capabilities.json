@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"Main calibration window and read-only overlay access","local":true,"windows":["main","overlay"],"permissions":["core:default"]}}

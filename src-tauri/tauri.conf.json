@@ -1,0 +1,55 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "D2 Ogre Kick",
+  "version": "0.1.0",
+  "identifier": "dev.d2ogrekick.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "D2 Ogre Kick · 动作校准台",
+        "url": "index.html",
+        "width": 1180,
+        "height": 760,
+        "minWidth": 680,
+        "minHeight": 520,
+        "center": true,
+        "resizable": true,
+        "decorations": true
+      },
+      {
+        "label": "overlay",
+        "title": "D2 Ogre Kick Overlay",
+        "url": "index.html?view=overlay",
+        "width": 470,
+        "height": 62,
+        "x": 24,
+        "y": 24,
+        "resizable": false,
+        "decorations": false,
+        "shadow": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "focus": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "copyright": "Copyright (c) 2026 MIGO_12",
+    "shortDescription": "D2 Ogre Kick 动作校准台",
+    "longDescription": "检查并调整一套可随时中止的固定键鼠动作序列。"
+  }
+}
