@@ -1,6 +1,7 @@
 node_modules/
 dist/
 src-tauri/target/
+.impeccable/
 .impeccable-capture/
 *.log
 .DS_Store
