@@ -130,7 +130,7 @@ impl GameKeyConfig {
             input::scan_code(binding).ok_or_else(|| format!("{name}按键不受支持：{binding}"))
         };
         Ok(AppliedGameKeys {
-            sprint: resolve("切换疾跑", &self.sprint)?,
+            sprint: resolve("切换冲刺", &self.sprint)?,
             jump: resolve("跳跃", &self.jump)?,
             interact: resolve("插旗/交互", &self.interact)?,
             weapon_slot_2: resolve("切换到 2 号位武器", &self.weapon_slot_2)?,
@@ -150,8 +150,10 @@ pub struct AppConfig {
     pub manual_height: u32,
     pub look_sensitivity: f64,
     pub ads_modifier: f64,
+    pub field_of_view: f64,
     pub reference_look_sensitivity: f64,
     pub reference_ads_modifier: f64,
+    pub reference_field_of_view: f64,
     pub first_ads_base: [i32; 2],
     pub void_arrow_base: [i32; 2],
     pub void_arrow_trim: [i32; 2],
@@ -173,8 +175,10 @@ impl Default for AppConfig {
             manual_height: 1080,
             look_sensitivity: 15.0,
             ads_modifier: 1.0,
+            field_of_view: 100.0,
             reference_look_sensitivity: 15.0,
             reference_ads_modifier: 1.0,
+            reference_field_of_view: 100.0,
             first_ads_base: [-2600, 50],
             void_arrow_base: [-300, 81],
             void_arrow_trim: [0, 0],
@@ -197,12 +201,26 @@ impl AppConfig {
         }
         for (name, value) in [
             ("视角灵敏度", self.look_sensitivity),
-            ("ADS 修正", self.ads_modifier),
             ("参考视角灵敏度", self.reference_look_sensitivity),
-            ("参考 ADS 修正", self.reference_ads_modifier),
         ] {
-            if !value.is_finite() || value <= 0.0 {
-                return Err(format!("{name} 必须大于 0"));
+            if !value.is_finite() || !(1.0..=100.0).contains(&value) {
+                return Err(format!("{name}必须在 1 到 100 之间"));
+            }
+        }
+        for (name, value) in [
+            ("瞄准灵敏度", self.ads_modifier),
+            ("参考瞄准灵敏度", self.reference_ads_modifier),
+        ] {
+            if !value.is_finite() || !(0.5..=1.5).contains(&value) {
+                return Err(format!("{name}必须在 0.5 到 1.5 之间"));
+            }
+        }
+        for (name, value) in [
+            ("视野范围", self.field_of_view),
+            ("参考视野范围", self.reference_field_of_view),
+        ] {
+            if !value.is_finite() || !(55.0..=105.0).contains(&value) {
+                return Err(format!("{name}必须在 55 到 105 之间"));
             }
         }
         for (name, value) in [
@@ -228,10 +246,17 @@ impl AppConfig {
     pub fn ads_scale(&self) -> f64 {
         (self.reference_look_sensitivity * self.reference_ads_modifier)
             / (self.look_sensitivity * self.ads_modifier)
+            * self.fov_scale()
     }
 
     pub fn look_scale(&self) -> f64 {
-        self.reference_look_sensitivity / self.look_sensitivity
+        self.reference_look_sensitivity / self.look_sensitivity * self.fov_scale()
+    }
+
+    pub fn fov_scale(&self) -> f64 {
+        let current_half_angle = (self.field_of_view.to_radians() / 2.0).tan();
+        let reference_half_angle = (self.reference_field_of_view.to_radians() / 2.0).tan();
+        current_half_angle / reference_half_angle
     }
 
     pub fn first_ads_offset(&self) -> [i32; 2] {
@@ -310,6 +335,68 @@ mod tests {
         };
         assert_eq!(config.first_ads_offset(), [-2600, 50]);
         assert_eq!(config.void_arrow_offset(), [-445, 119]);
+    }
+
+    #[test]
+    fn fov_uses_tangent_projection_scaling() {
+        let config = AppConfig {
+            field_of_view: 90.0,
+            ..AppConfig::default()
+        };
+        let expected = (45_f64.to_radians()).tan() / (50_f64.to_radians()).tan();
+        assert!((config.fov_scale() - expected).abs() < 1e-10);
+        assert_eq!(config.first_ads_offset(), [-2182, 42]);
+        assert_eq!(config.void_arrow_offset(), [-252, 68]);
+        assert_eq!(config.sprint_offset(), [235, 0]);
+    }
+
+    #[test]
+    fn fov_stays_within_destiny_slider_range() {
+        let too_narrow = AppConfig {
+            field_of_view: 54.0,
+            ..AppConfig::default()
+        };
+        let too_wide_reference = AppConfig {
+            reference_field_of_view: 106.0,
+            ..AppConfig::default()
+        };
+        assert_eq!(
+            too_narrow.validate().unwrap_err(),
+            "视野范围必须在 55 到 105 之间"
+        );
+        assert_eq!(
+            too_wide_reference.validate().unwrap_err(),
+            "参考视野范围必须在 55 到 105 之间"
+        );
+    }
+
+    #[test]
+    fn legacy_settings_without_fov_keep_the_reference_default() {
+        let config: AppConfig = serde_json::from_str(r#"{"lookSensitivity": 10}"#).unwrap();
+        assert_eq!(config.look_sensitivity, 10.0);
+        assert_eq!(config.field_of_view, 100.0);
+        assert_eq!(config.reference_field_of_view, 100.0);
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn sensitivity_stays_within_destiny_slider_ranges() {
+        let invalid_look = AppConfig {
+            look_sensitivity: 0.0,
+            ..AppConfig::default()
+        };
+        let invalid_aim = AppConfig {
+            ads_modifier: 1.6,
+            ..AppConfig::default()
+        };
+        assert_eq!(
+            invalid_look.validate().unwrap_err(),
+            "视角灵敏度必须在 1 到 100 之间"
+        );
+        assert_eq!(
+            invalid_aim.validate().unwrap_err(),
+            "瞄准灵敏度必须在 0.5 到 1.5 之间"
+        );
     }
 
     #[test]

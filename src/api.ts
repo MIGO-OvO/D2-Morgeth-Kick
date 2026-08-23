@@ -14,8 +14,10 @@ export const defaultConfig: AppConfig = {
   manualHeight: 1080,
   lookSensitivity: 15,
   adsModifier: 1,
+  fieldOfView: 100,
   referenceLookSensitivity: 15,
   referenceAdsModifier: 1,
+  referenceFieldOfView: 100,
   firstAdsBase: [-2600, 50],
   voidArrowBase: [-300, 81],
   voidArrowTrim: [0, 0],
@@ -97,16 +99,22 @@ function startMock() {
 }
 
 export function calculateAppliedOffsets(config: AppConfig): AppliedOffsets {
+  const fovScale =
+    Math.tan((config.fieldOfView * Math.PI) / 360) /
+    Math.tan((config.referenceFieldOfView * Math.PI) / 360);
   const adsScale =
     (config.referenceLookSensitivity * config.referenceAdsModifier) /
-    (config.lookSensitivity * config.adsModifier);
-  const lookScale = config.referenceLookSensitivity / config.lookSensitivity;
+    (config.lookSensitivity * config.adsModifier) *
+    fovScale;
+  const lookScale =
+    (config.referenceLookSensitivity / config.lookSensitivity) * fovScale;
   const apply = (base: [number, number], scale: number, trim: [number, number] = [0, 0]) =>
     base.map((value, index) => Math.round(value * scale + trim[index])) as [number, number];
 
   return {
     adsScale,
     lookScale,
+    fovScale,
     firstAds: apply(config.firstAdsBase, adsScale),
     voidArrow: apply(config.voidArrowBase, lookScale, config.voidArrowTrim),
     sprint: apply(config.sprintBase, lookScale, config.sprintTrim),

@@ -190,9 +190,11 @@ kbd { padding: 2px 4px; border: 1px solid currentColor; border-radius: 3px; font
 .console-panel h4 { display: flex; justify-content: space-between; gap: 10px; margin: 14px 0 8px; font-size: .625rem; }
 .console-panel h4 small { color: var(--c-muted); font-weight: 500; }
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.field-grid.settings-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .field-grid label { display: grid; gap: 5px; color: var(--c-soft); font-size: .5625rem; }
 .field-grid label b, .field-grid label em { min-height: 31px; display: flex; align-items: center; padding: 0 9px; border: 1px solid var(--c-line-strong); border-radius: 6px; background: var(--c-control); color: var(--c-text); font-size: .625rem; font-style: normal; font-weight: 500; font-variant-numeric: tabular-nums; }
 .scale-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin-top: 10px; overflow: hidden; border: 1px solid var(--c-line); border-radius: 7px; background: var(--c-line); }
+.scale-row.settings-scales { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .scale-row span { display: grid; gap: 4px; padding: 10px; background: var(--c-subtle); color: var(--c-soft); font-size: .53125rem; }
 .scale-row strong { color: var(--c-blue); font-size: .75rem; }
 .vector-card { position: relative; min-height: 82px; margin-top: 14px; padding: 11px; overflow: hidden; border: 1px solid var(--c-line); border-radius: 7px; background: var(--c-subtle); font-size: .5625rem; }

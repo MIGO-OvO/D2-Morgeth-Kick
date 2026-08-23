@@ -38,8 +38,10 @@ export interface AppConfig {
   manualHeight: number;
   lookSensitivity: number;
   adsModifier: number;
+  fieldOfView: number;
   referenceLookSensitivity: number;
   referenceAdsModifier: number;
+  referenceFieldOfView: number;
   firstAdsBase: [number, number];
   voidArrowBase: [number, number];
   voidArrowTrim: [number, number];
@@ -56,6 +58,7 @@ export interface AppConfig {
 export interface AppliedOffsets {
   adsScale: number;
   lookScale: number;
+  fovScale: number;
   firstAds: [number, number];
   voidArrow: [number, number];
   sprint: [number, number];

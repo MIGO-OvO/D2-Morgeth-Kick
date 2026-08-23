@@ -215,7 +215,7 @@ function VectorEditor({
         <NumberField label={trim ? "X 微调" : "X 基准"} value={values[0]} onChange={(value) => change([value, values[1]])} />
         <NumberField label={trim ? "Y 微调" : "Y 基准"} value={values[1]} onChange={(value) => change([values[0], value])} />
       </div>
-      {trim && <div className="base-note">基准 {base[0]}, {base[1]} · 当前值已换算灵敏度</div>}
+      {trim && <div className="base-note">基准 {base[0]}, {base[1]} · 当前值已换算灵敏度与 FOV</div>}
     </section>
   );
 }
@@ -387,7 +387,7 @@ export default function App() {
     updateConfig("gameKeys", structuredClone(defaultConfig.gameKeys));
   };
   const gameKeyRows: Array<[keyof GameKeyConfig, string, string]> = [
-    ["sprint", "切换疾跑", "Shift"],
+    ["sprint", "切换冲刺", "Shift"],
     ["jump", "跳跃", "Space"],
     ["interact", "插旗 / 交互", "E"],
     ["weaponSlot2", "切换到 2 号位武器", "2"],
@@ -500,16 +500,18 @@ export default function App() {
                 <NumberField label="高度" value={config.manualHeight} min={480} max={4320} onChange={(value) => updateConfig("manualHeight", value)} unit="px" />
               </div>
             )}
-            <div className="subsection-title"><span>游戏内设置</span><small>参考 15 / 1.00</small></div>
-            <div className="pair-fields">
+            <div className="subsection-title"><span>游戏内设置</span><small>参考 15 / 1.00 / 100°</small></div>
+            <div className="game-settings-grid">
               <NumberField label="视角灵敏度" value={config.lookSensitivity} min={1} max={100} step={1} onChange={(value) => updateConfig("lookSensitivity", value)} />
-              <NumberField label="ADS 修正" value={config.adsModifier} min={0.1} max={3} step={0.01} onChange={(value) => updateConfig("adsModifier", value)} />
+              <NumberField label="瞄准灵敏度" value={config.adsModifier} min={0.5} max={1.5} step={0.1} onChange={(value) => updateConfig("adsModifier", value)} />
+              <NumberField label="视野范围 (FOV)" value={config.fieldOfView} min={55} max={105} step={1} unit="°" onChange={(value) => updateConfig("fieldOfView", value)} />
             </div>
             <div className="scale-readout">
               <div><span>ADS 距离系数</span><strong>{applied.adsScale.toFixed(3)}×</strong></div>
               <div><span>腰射距离系数</span><strong>{applied.lookScale.toFixed(3)}×</strong></div>
+              <div><span>FOV 投影系数</span><strong>{applied.fovScale.toFixed(3)}×</strong></div>
             </div>
-            <p className="info-note">按 15 / 1.00 的参考设置反向换算。FOV 不同或开启鼠标加速时，还要在游戏里微调。</p>
+            <p className="info-note">按 15 / 1.00 / 100° 的参考设置换算，FOV 使用视场投影比例。实际落点仍建议在游戏内微调。</p>
           </section>
 
           <section className={`calibration-column ${tab === "aim" ? "mobile-active" : ""}`} aria-labelledby="aim-title">
@@ -584,10 +586,12 @@ export default function App() {
       {openPanel === "guide" && (
         <AppDialog title="开始前请确认" description="完成以下准备后，回到游戏直接按启动热键。" onClose={closeGuide}>
           <ol className="usage-steps">
-            <li><span>1</span><div><strong>装备运动强化模组</strong><p>腿部护甲装备 3 个运动强化模组。</p></div></li>
+            <li><span>1</span><div><strong>装备运动强化模组</strong><p>腿部护甲装备 3 个运动强化模组，近战属性推荐叠到 140。</p></div></li>
             <li><span>2</span><div><strong>使用指定棱镜配置</strong><p>装备棱镜分支职业，选择冰飞镖近战、虚空箭超能和飞升星相。</p></div></li>
-            <li><span>3</span><div><strong>设置视野范围</strong><p>将游戏内 FOV 改为 100。</p></div></li>
-            <li><span>4</span><div><strong>保持角色与准星不动</strong><p>进入游戏后不要移动角色或挪动准星，直接按 <kbd>{formatHotkey(config.hotkeys.start)}</kbd> 启动。</p></div></li>
+            <li><span>3</span><div><strong>装备指定武器</strong><p>二号位武器需选择无礼言论。</p></div></li>
+            <li><span>4</span><div><strong>同步游戏内设置</strong><p>调整软件设置中的视角灵敏度/瞄准灵敏度/视野范围与游戏内一致。</p></div></li>
+            <li><span>5</span><div><strong>设置切换冲刺</strong><p>确保设置了切换冲刺的按键，游戏内和软件中的冲刺键需为切换冲刺。</p></div></li>
+            <li><span>6</span><div><strong>保持角色与准星不动</strong><p>进入游戏后不要移动角色或挪动准星，直接按 <kbd>{formatHotkey(config.hotkeys.start)}</kbd> 启动。</p></div></li>
           </ol>
           <div className="dialog-note">首次使用还请核对按键映射；WASD 移动键无需设置。</div>
           <div className="dialog-actions">
@@ -611,7 +615,7 @@ export default function App() {
             </div>
           </section>
           <section className="key-section" aria-labelledby="game-key-settings-title">
-            <div className="settings-section-heading"><div><h3 id="game-key-settings-title">游戏内操作</h3><p>WASD 固定用于移动，无需设置；ADS 固定使用鼠标右键。</p></div></div>
+            <div className="settings-section-heading"><div><h3 id="game-key-settings-title">游戏内操作</h3><p>WASD 固定用于移动，ADS 固定使用鼠标右键；冲刺键需对应游戏内“切换冲刺”。</p></div></div>
             <div className="game-key-grid">
               {gameKeyRows.map(([key, label, fallback]) => (
                 <label className="key-select-row" key={key}>

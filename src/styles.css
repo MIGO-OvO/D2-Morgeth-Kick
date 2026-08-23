@@ -199,6 +199,7 @@ main { max-width: 1500px; margin: 0 auto; padding: 18px clamp(18px, 2vw, 28px) 2
 .subsection-title { display: flex; align-items: center; justify-content: space-between; margin: 17px 0 9px; }
 .subsection-title span { font-size: 12px; font-weight: 700; }
 .subsection-title small { color: var(--text-muted); font-size: 10px; }
+.game-settings-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 10px; }
 .pair-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
 .field { display: grid; gap: 5px; min-width: 0; }
 .field-label { color: var(--text-soft); font-size: 11px; font-weight: 600; line-height: 1.4; }
@@ -207,7 +208,7 @@ main { max-width: 1500px; margin: 0 auto; padding: 18px clamp(18px, 2vw, 28px) 2
 .number-control input { width: 100%; min-width: 0; height: 34px; padding: 0 9px; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 13px; font-variant-numeric: tabular-nums; }
 .unit { padding: 0 9px 0 4px; color: var(--text-muted); font-size: 11px; }
 .field-hint { color: var(--text-muted); font-size: 10px; line-height: 1.45; }
-.scale-readout { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin-top: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--line); overflow: hidden; }
+.scale-readout { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin-top: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--line); overflow: hidden; }
 .scale-readout div { display: grid; gap: 3px; padding: 10px; background: var(--surface-subtle); }
 .scale-readout span { color: var(--text-muted); font-size: 11px; }
 .scale-readout strong { color: var(--blue); font-size: 15px; font-variant-numeric: tabular-nums; }
@@ -343,7 +344,7 @@ main { max-width: 1500px; margin: 0 auto; padding: 18px clamp(18px, 2vw, 28px) 2
   .header-controls .button { flex: 1; }
   .window-controls { order: -1; margin-left: auto; }
   .workspace-tabs button { font-size: 11px; }
-  .pair-fields, .timing-list { grid-template-columns: 1fr; }
+  .game-settings-grid, .pair-fields, .timing-list { grid-template-columns: 1fr; }
   .save-indicator { display: none; }
   .hotkey-grid, .game-key-grid { grid-template-columns: 1fr; }
   .dialog-heading, .key-section { padding-right: 16px; padding-left: 16px; }
