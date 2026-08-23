@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   calculateAppliedOffsets,
+  closeWindow,
   defaultConfig,
   defaultRuntime,
   detectResolution,
   getConfig,
   getRuntimeSnapshot,
+  minimizeWindow,
   onRuntimeState,
   saveConfig,
   setOverlayVisible,
   startSequence,
   stopSequence,
+  toggleMaximizeWindow,
 } from "./api";
 import type {
   AppConfig,
@@ -31,8 +34,8 @@ import {
   type HotkeyModifier,
 } from "./keyboard";
 import { applyTheme, resolveTheme, THEME_STORAGE_KEY, type Theme } from "./theme";
+import morgathLogo from "../portal/morgath-logo.png";
 
-const phases = ["进场准备", "飞升", "后退定位", "ADS 近战", "虚空箭", "冲刺", "终结"];
 type WorkspaceTab = "display" | "aim" | "timing";
 type SaveState = "idle" | "saving" | "saved" | "error";
 type OpenPanel = "guide" | "keys" | null;
@@ -46,14 +49,13 @@ const statusLabels: Record<RuntimeStatus, string> = {
   error: "发生错误",
 };
 
-function Icon({ name }: { name: "play" | "stop" | "display" | "target" | "clock" | "check" | "refresh" | "sun" | "moon" | "help" | "keyboard" | "close" | "reset" }) {
+function Icon({ name }: { name: "play" | "stop" | "display" | "target" | "clock" | "refresh" | "sun" | "moon" | "help" | "keyboard" | "close" | "reset" | "minimize" | "maximize" }) {
   const paths: Record<typeof name, ReactNode> = {
     play: <path d="m9 7 8 5-8 5V7Z" />,
     stop: <path d="M8 8h8v8H8z" />,
     display: <><rect x="3" y="5" width="18" height="12" rx="2" /><path d="M8 21h8M12 17v4" /></>,
     target: <><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2" /><path d="M12 2v3m0 14v3M2 12h3m14 0h3" /></>,
     clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
-    check: <path d="m5 12 4 4L19 6" />,
     refresh: <><path d="M20 7v5h-5" /><path d="M18.5 16a7 7 0 1 1 .2-8.2L20 12" /></>,
     sun: <><circle cx="12" cy="12" r="3.5" /><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
     moon: <path d="M20 15.2A8.5 8.5 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z" />,
@@ -61,6 +63,8 @@ function Icon({ name }: { name: "play" | "stop" | "display" | "target" | "clock"
     keyboard: <><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M7 10h.01M11 10h.01M15 10h.01M18 10h.01M7 14h7m2 0h2" /></>,
     close: <path d="m7 7 10 10M17 7 7 17" />,
     reset: <><path d="M4 4v6h6" /><path d="M5.5 15a7 7 0 1 0 .2-8.2L4 10" /></>,
+    minimize: <path d="M6 16h12" />,
+    maximize: <rect x="6.5" y="6.5" width="11" height="11" rx=".5" />,
   };
   return <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>;
 }
@@ -395,15 +399,21 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="command-header">
-        <div className="brand-block">
-          <div className="brand-mark" aria-hidden="true">D2</div>
+      <header
+        className="command-header"
+        data-tauri-drag-region
+        onDoubleClick={(event) => {
+          if (!(event.target as HTMLElement).closest("button, input, label")) void toggleMaximizeWindow();
+        }}
+      >
+        <div className="brand-block" data-tauri-drag-region>
+          <img className="brand-mark" src={morgathLogo} alt="" aria-hidden="true" />
           <div>
             <h1>Morgath Kick</h1>
           </div>
         </div>
 
-        <div className="runtime-summary">
+        <div className="runtime-summary" data-tauri-drag-region>
           <span className={`status-dot ${snapshot.status}`} />
           <div>
             <strong>{statusLabels[snapshot.status]}</strong>
@@ -421,46 +431,43 @@ export default function App() {
             <Icon name={theme === "dark" ? "sun" : "moon"} />
             <span>{theme === "dark" ? "浅色" : "深色"}</span>
           </button>
-          <label className="switch-control">
-            <input type="checkbox" checked={config.overlayVisible} onChange={toggleOverlay} />
-            <span className="switch-track" />
-            <span>悬浮窗</span>
-          </label>
+          <div className="overlay-control">
+            <label className="switch-control">
+              <input type="checkbox" checked={config.overlayVisible} onChange={toggleOverlay} />
+              <span className="switch-track" />
+              <span>悬浮窗</span>
+            </label>
+            <label className="overlay-opacity" title={`悬浮窗透明度 ${Math.round(config.overlayOpacity * 100)}%`}>
+              <span>{Math.round(config.overlayOpacity * 100)}%</span>
+              <input
+                type="range"
+                min="30"
+                max="100"
+                step="1"
+                value={Math.round(config.overlayOpacity * 100)}
+                disabled={!config.overlayVisible}
+                aria-label="悬浮窗透明度"
+                onChange={(event) => updateConfig("overlayOpacity", Number(event.target.value) / 100)}
+              />
+            </label>
+          </div>
           <button className="button secondary stop-button" type="button" onClick={() => runAction("stop")} disabled={!running}>
             <Icon name="stop" />停止 <kbd>{formatHotkey(config.hotkeys.stop)}</kbd>
           </button>
           <button className="button primary" type="button" onClick={() => runAction("start")} disabled={running}>
             <Icon name="play" />启动 <kbd>{formatHotkey(config.hotkeys.start)}</kbd>
           </button>
+          <div className="window-controls" aria-label="窗口控制">
+            <button type="button" onClick={() => void minimizeWindow()} aria-label="最小化" title="最小化"><Icon name="minimize" /></button>
+            <button type="button" onClick={() => void toggleMaximizeWindow()} aria-label="最大化或还原" title="最大化或还原"><Icon name="maximize" /></button>
+            <button className="window-close" type="button" onClick={() => void closeWindow()} aria-label="关闭" title="关闭"><Icon name="close" /></button>
+          </div>
         </div>
       </header>
 
       {error && <div className="error-banner" role="alert"><strong>操作未完成</strong><span>{error}</span><button type="button" onClick={() => setError(null)} aria-label="关闭错误提示">×</button></div>}
 
       <main>
-        <section className="phase-panel" aria-labelledby="phase-title">
-          <div className="section-heading phase-heading">
-            <div>
-              <h2 id="phase-title">七阶段动作序列</h2>
-            </div>
-            <div className="phase-meta">
-              <span>当前阶段</span>
-              <strong>{String(snapshot.phaseIndex + 1).padStart(2, "0")} / 07</strong>
-            </div>
-          </div>
-          <ol className="phase-rail">
-            {phases.map((phase, index) => {
-              const state = index < snapshot.phaseIndex ? "complete" : index === snapshot.phaseIndex ? "active" : "upcoming";
-              return (
-                <li key={phase} className={state} aria-current={state === "active" ? "step" : undefined}>
-                  <span className="phase-node">{state === "complete" ? <Icon name="check" /> : index + 1}</span>
-                  <span className="phase-name">{phase}</span>
-                </li>
-              );
-            })}
-          </ol>
-        </section>
-
         <nav className="workspace-tabs" aria-label="校准分组">
           {([
             ["display", "显示与灵敏度", "display"],

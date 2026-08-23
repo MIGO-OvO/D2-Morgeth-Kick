@@ -5,7 +5,7 @@ mod resolution;
 mod runtime;
 
 use std::sync::{atomic::Ordering, Arc};
-use tauri::{Emitter, Manager, State};
+use tauri::{Emitter, Manager, PhysicalPosition, Position, State};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use config::AppConfig;
@@ -157,6 +157,44 @@ fn stop_internal(app: &tauri::AppHandle, state: &Arc<AppState>) -> RuntimeSnapsh
     }
 }
 
+fn sync_overlay_to_game(app: &tauri::AppHandle, state: &Arc<AppState>) {
+    let Some(overlay) = app.get_webview_window("overlay") else {
+        return;
+    };
+    let enabled = state
+        .config
+        .lock()
+        .unwrap_or_else(|poison| poison.into_inner())
+        .overlay_visible;
+    let Some(area) = enabled.then(resolution::active_game_client_area).flatten() else {
+        if overlay.is_visible().unwrap_or(false) {
+            let _ = overlay.hide();
+        }
+        return;
+    };
+    let Ok(size) = overlay.outer_size() else {
+        return;
+    };
+    let available_x = i64::from(area.width).saturating_sub(i64::from(size.width));
+    let x = i64::from(area.left) + available_x.max(0) / 2;
+    let y = i64::from(area.top) + 20;
+    let position = PhysicalPosition::new(
+        x.clamp(i64::from(i32::MIN), i64::from(i32::MAX)) as i32,
+        y.clamp(i64::from(i32::MIN), i64::from(i32::MAX)) as i32,
+    );
+    let _ = overlay.set_position(Position::Physical(position));
+    if !overlay.is_visible().unwrap_or(false) {
+        let _ = overlay.show();
+    }
+}
+
+fn start_overlay_monitor(app: tauri::AppHandle, state: Arc<AppState>) {
+    std::thread::spawn(move || loop {
+        sync_overlay_to_game(&app, &state);
+        std::thread::sleep(std::time::Duration::from_millis(180));
+    });
+}
+
 #[tauri::command]
 fn start_sequence(
     app: tauri::AppHandle,
@@ -171,14 +209,23 @@ fn stop_sequence(app: tauri::AppHandle, state: State<'_, Arc<AppState>>) -> Runt
 }
 
 #[tauri::command]
-fn set_overlay_visible(app: tauri::AppHandle, visible: bool) -> Result<bool, String> {
+fn set_overlay_visible(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<AppState>>,
+    visible: bool,
+) -> Result<bool, String> {
     let overlay = app
         .get_webview_window("overlay")
         .ok_or_else(|| "Overlay 窗口不存在".to_string())?;
-    if visible {
-        overlay.show().map_err(|error| error.to_string())?;
-    } else {
+    state
+        .config
+        .lock()
+        .unwrap_or_else(|poison| poison.into_inner())
+        .overlay_visible = visible;
+    if !visible {
         overlay.hide().map_err(|error| error.to_string())?;
+    } else {
+        sync_overlay_to_game(&app, state.inner());
     }
     Ok(visible)
 }
@@ -223,10 +270,12 @@ pub fn run() {
             }
             if let Some(overlay) = app.get_webview_window("overlay") {
                 overlay.set_ignore_cursor_events(true)?;
-                if !overlay_visible {
-                    overlay.hide()?;
-                }
+                overlay.hide()?;
             }
+            if overlay_visible {
+                sync_overlay_to_game(app.handle(), &state);
+            }
+            start_overlay_monitor(app.handle().clone(), Arc::clone(&state));
             Ok(())
         })
         .on_window_event(|window, event| {

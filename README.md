@@ -1,5 +1,9 @@
 # D2 Morgath Kick
 
+<p align="center">
+  <img src="portal/morgath-logo.png" width="192" alt="D2 Morgath Kick 项目 Logo">
+</p>
+
 [![GitHub Pages](https://img.shields.io/badge/产品门户-GitHub%20Pages-1769e0?logo=github)](https://migo-ovo.github.io/D2-Morgath-Kick/)
 [![Latest release](https://img.shields.io/github/v/release/MIGO-OvO/D2-Morgath-Kick?display_name=tag&sort=semver)](https://github.com/MIGO-OvO/D2-Morgath-Kick/releases/latest)
 [![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-1769e0?logo=windows11&logoColor=white)](https://github.com/MIGO-OvO/D2-Morgath-Kick/releases/latest)
@@ -24,7 +28,8 @@ D2 Morgath Kick 是一款 Windows 动作校准工具。它基于原项目重构�
 - 单独修改六项动作等待时间；终结技完成后流程立即结束。
 - 自定义程序启动/停止热键和游戏内操作按键，默认 F8 全局启动、F10 全局中止。
 - 中止、报错或退出时释放已按下的键盘与鼠标输入。
-- 独立的置顶悬浮窗，只显示运行状态、当前阶段和快捷键。
+- 按 `destiny2.exe` 进程绑定的点击穿透悬浮窗：仅在游戏位于前台时显示，实时跟随客户区中上位置，并可调整透明度。
+- 主窗口使用与现有控制台风格一致的自定义标题栏。
 - 主窗口支持浅色和深色模式，默认跟随 Windows。
 - 窄窗口自动切换为单面板校准界面。
 
@@ -124,7 +129,7 @@ D2 Morgath Kick 由三个表面组成：Tauri 2 桌面壳内运行两个 WebView
 ┌──────────────────────────┐   ┌──────────────────────────┐
 │ 主窗口 (WebView2 · React) │   │ 悬浮窗 (WebView2 · React) │
 │ src/App.tsx              │   │ src/OverlayApp.tsx        │
-│ 校准界面 · 七阶段轨道      │   │ 置顶 · 点击穿透 · 只读状态 │
+│ 三栏校准 · 自定义标题栏    │   │ 进程绑定 · 点击穿透 · 只读 │
 └────────────┬─────────────┘   └────────────┬─────────────┘
              │ invoke / listen              │ listen
              ▼                              ▼
@@ -146,13 +151,13 @@ D2 Morgath Kick 由三个表面组成：Tauri 2 桌面壳内运行两个 WebView
 
 | 模块 | 职责 |
 | --- | --- |
-| `src/`（React 19 + TypeScript + Vite） | 主窗口与悬浮窗的界面层。`api.ts` 封装 Tauri 的 `invoke` / `listen`，并提供浏览器 mock，使 `npm run dev` 可以在没有 Tauri 的情况下开发界面 |
+| `src/`（React 19 + TypeScript + Vite） | 主窗口与悬浮窗的界面层。主窗口使用自定义标题栏；`api.ts` 封装 Tauri 的 `invoke` / `listen`，并提供浏览器 mock，使 `npm run dev` 可以在没有 Tauri 的情况下开发界面 |
 | `src-tauri/src/lib.rs` | 注册七个 Tauri 命令，动态注册启停全局热键，处理主窗口关闭时的取消与输入释放 |
 | `src-tauri/src/engine.rs` | 七阶段动作序列执行器。等待循环每 10ms 检查一次取消标志，镜头移动拆成小步执行，任何结果下都以 `release_all()` 收尾 |
 | `src-tauri/src/runtime.rs` | 以 `Arc<AppState>` 共享配置、状态和原子标志。状态变化通过 `runtime-state` 事件同步到主窗口与悬浮窗 |
 | `src-tauri/src/config.rs` | `AppConfig` 校验、`settings.json` 读写，以及按参考灵敏度换算 ADS / 腰射距离系数的偏移计算 |
 | `src-tauri/src/input.rs` | Windows `SendInput` 封装：扫描码按键、相对鼠标移动，并统一释放 W/A/S/D、当前操作键映射与鼠标右键 |
-| `src-tauri/src/resolution.rs` | 枚举可见窗口，按标题找到 Destiny 2 并读取客户区尺寸与 DPI，找不到时回退到主显示器尺寸 |
+| `src-tauri/src/resolution.rs` | 枚举可见窗口，按 `destiny2.exe` 进程找到 Destiny 2，读取客户区位置、尺寸与 DPI；找不到时回退到主显示器尺寸 |
 | `portal/` | 静态 GitHub Pages 门户：产品介绍、界面预览，并通过 GitHub API 指向最新 Release 下载 |
 
 ### 执行与状态流
@@ -160,7 +165,7 @@ D2 Morgath Kick 由三个表面组成：Tauri 2 桌面壳内运行两个 WebView
 1. Rust 启动时从应用配置目录读取 `settings.json` 并放入 `Arc<AppState>`。
 2. 前端通过 `get_config` / `detect_resolution` 初始化；修改参数后防抖 450ms 调 `save_config`，由 Rust 校验后写回 `settings.json`。
 3. 点击启动或按当前启动热键时，`running` 原子标志用 `compare_exchange` 防止重复启动，动作引擎在独立线程执行。
-4. 引擎切换阶段时更新快照并广播 `runtime-state`，主窗口与悬浮窗同时刷新状态和进度。
+4. 引擎切换阶段时更新快照并广播 `runtime-state`，主窗口状态摘要与悬浮窗同步刷新；悬浮窗监视器仅在 Destiny 2 位于前台时将其显示在客户区中上位置。
 5. 按当前停止热键置位取消标志，等待与镜头步骤在 10ms 内响应，状态进入「正在停止」并最终释放全部输入。
 6. 完成、中止或出错后引擎都会调用 `release_all()`；关闭主窗口同样先取消并释放输入再退出。
 
@@ -170,7 +175,7 @@ D2 Morgath Kick 由三个表面组成：Tauri 2 桌面壳内运行两个 WebView
 D2-Morgath-Kick/
 ├── src/                    # React 主窗口、悬浮窗与前端 API
 ├── src-tauri/              # Rust 动作引擎、配置、输入与 Tauri 设置
-├── portal/                 # GitHub Pages 门户页
+├── portal/                 # GitHub Pages 门户页与项目 Logo 主源
 ├── docs/screenshots/       # README 使用的明暗主题截图
 ├── .github/workflows/      # GitHub Pages 部署工作流
 ├── PRODUCT.md              # 产品事实与范围

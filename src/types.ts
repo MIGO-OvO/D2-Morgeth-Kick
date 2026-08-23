@@ -49,6 +49,7 @@ export interface AppConfig {
   hotkeys: HotkeyConfig;
   gameKeys: GameKeyConfig;
   overlayVisible: boolean;
+  overlayOpacity: number;
   usageGuideSeen: boolean;
 }
 

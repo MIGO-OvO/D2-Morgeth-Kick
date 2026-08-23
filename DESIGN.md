@@ -22,8 +22,6 @@ colors:
   secondary-ink-dark: "#c1cad5"
   muted-ink: "#626b78"
   muted-ink-dark: "#9ca8b6"
-  brand-mark: "#1c2532"
-  brand-mark-dark: "#e6edf7"
   on-action: "#ffffff"
   on-action-dark: "#111820"
   safety-green: "#16835b"
@@ -143,12 +141,6 @@ components:
     textColor: "{colors.instrument-ink}"
     rounded: "{rounded.panel}"
     padding: "18px"
-  phase-node-active:
-    backgroundColor: "{colors.action-blue-soft}"
-    textColor: "{colors.action-blue}"
-    typography: "{typography.mono}"
-    rounded: "{rounded.circle}"
-    size: "24px"
   overlay-instrument:
     backgroundColor: "{colors.overlay-panel}"
     textColor: "{colors.on-action}"
@@ -165,7 +157,7 @@ components:
 
 **Creative North Star: "精密校准台 / The Calibrated Console"**
 
-D2 Morgath Kick feels like a compact instrument placed beside the game: restrained, trustworthy, readable, and immediately operable. It keeps the recognizable character of a Windows utility without copying Windows Settings, using a neutral workbench, blue operational states, tabular calibration values, and a visible seven-stage rail.
+D2 Morgath Kick feels like a compact instrument placed beside the game: restrained, trustworthy, readable, and immediately operable. It keeps the recognizable character of a Windows utility without copying Windows Settings, using a neutral workbench, blue operational states, tabular calibration values, and a compact live-status summary.
 
 The desktop console and public portal present light and dark themes as equal expressions of one semantic system. The Overlay is the quietest expression: a read-only safety instrument that exposes status, progress, and the stop action without competing with gameplay.
 
@@ -174,7 +166,7 @@ The desktop console and public portal present light and dark themes as equal exp
 - Neutral workbench surfaces with crisp one-pixel separation
 - One blue operational accent supported by explicit text and icon states
 - Dense, tabular calibration data organized into inspectable groups
-- A visible seven-stage sequence shared across product surfaces
+- A compact live-status summary in the main title bar and detailed phase progress only in the in-game Overlay
 - Paired light and dark themes with a quieter, fixed dark Overlay
 - Short, direct Chinese copy and precise Windows utility controls
 
@@ -200,7 +192,7 @@ The palette is cool and neutral, with Action Blue reserved for operation and sel
 - **Subtle Instrument Surface:** Separates nested controls and readouts through tone instead of elevation.
 - **Separator and Strong Separator:** Define hierarchy, field boundaries, rails, and card edges.
 - **Instrument Ink, Secondary Ink, and Muted Ink:** Step from primary reading to support copy and metadata.
-- **D2 Brand Mark:** Keeps the monogram recognizable through an inverted neutral block.
+- **Morgath Character Mark:** Uses the full-color square creature artwork without recoloring. Keep its teal background, square crop, and recognizable purple spore face intact across themes.
 - **Overlay Charcoal:** Provides a stable dark safety surface independent of the desktop theme.
 
 **The One Operational Accent Rule.** Use Action Blue for actionable, current, or selected states, never as ambient decoration.
@@ -233,7 +225,7 @@ The palette is cool and neutral, with Action Blue reserved for operation and sel
 
 ## Layout
 
-The desktop application uses a command header, a full-width seven-stage rail, and a three-column calibration workspace with the aiming column given slightly more room. A fixed footer keeps immutable keys and save state visible. At narrower widths the workspace becomes a three-tab, single-panel view; the command header wraps, phase labels progressively collapse, and paired fields stack on small screens.
+The desktop application uses a draggable custom command title bar and a three-column calibration workspace with the aiming column given slightly more room. The title bar keeps runtime status, resolution, Overlay visibility and opacity, actions, and familiar Windows window controls together. A fixed footer keeps immutable keys and save state visible. At narrower widths the workspace becomes a three-tab, single-panel view, lower-priority title-bar metadata collapses, and paired fields stack on small screens.
 
 The portal opens as a split stage with concise copy beside a large console preview, then moves through the sequence, calibration ledger, safety boundary, and download close. It stacks to one column on compact viewports, preserves usable control heights, reduces the preview before removing proof, and converts long rails and ledgers into smaller responsive groupings.
 
@@ -286,13 +278,9 @@ Components feel precise, restrained, and sized for an unmistakable click or tap 
 - **Compact:** A segmented three-tab workspace reveals one panel at a time with pressed state and icon redundancy.
 - **Portal:** Plain text links stay secondary to the download action and disappear cleanly on mobile.
 
-### Seven-Stage Rail
-
-The rail is the signature orientation component. Completed and current nodes use Action Blue, future nodes remain neutral, the current stage is identified by ring and label weight, and compact layouts preserve all seven positions even when most labels hide.
-
 ### Overlay Safety Instrument
 
-The Overlay is read-only and click-through. It keeps live status at the start, progress and the phase fraction in the center, and stop guidance at the end. As width contracts it removes start guidance first, then progress, leaving the current status as the final safe minimum.
+The Overlay is read-only and click-through. It is shown only while the `destiny2.exe` game process owns the foreground window, and follows the upper-center of the game client area. It keeps live status at the start, progress and the phase fraction in the center, and stop guidance at the end; its overall opacity is configurable. As width contracts it removes start guidance first, then progress, leaving the current status as the final safe minimum.
 
 ## Do's and Don'ts
 
@@ -301,7 +289,7 @@ The Overlay is read-only and click-through. It keeps live status at the start, p
 - **Do** keep calibration values adjacent to the phase or behavior they affect.
 - **Do** use Action Blue for primary action, focus, selection, active progress, and no other purpose.
 - **Do** pair light and dark semantic roles and verify both at common Windows scaling levels.
-- **Do** preserve the visible seven-stage sequence and the explicit configured-stop-hotkey safety path.
+- **Do** preserve the explicit configured-stop-hotkey safety path and keep current runtime status visible in the title bar.
 - **Do** keep the Overlay read-only, quiet, clipped, and free of outer shadow.
 
 ### Don't:

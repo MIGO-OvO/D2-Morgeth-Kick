@@ -59,7 +59,7 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
   border-bottom: 1px solid var(--line);
 }
 .site-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-.brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 9px; background: var(--brand); color: var(--on-brand); font-size: .875rem; font-weight: 760; letter-spacing: .04em; }
+.brand-mark { width: 42px; height: 42px; flex: none; border-radius: 10px; object-fit: cover; }
 .site-brand > span:last-child { display: grid; line-height: 1.1; }
 .site-brand strong { font-size: 1rem; }
 .site-brand small { margin-top: 5px; color: var(--text-muted); font-size: .6875rem; }
@@ -148,7 +148,7 @@ main { overflow: hidden; }
   --c-blue-soft: oklch(28% 0.055 255);
 }
 .console-header { min-height: 74px; display: grid; grid-template-columns: auto auto minmax(210px, 1fr) auto auto; align-items: center; gap: 14px; padding: 0 22px; border-bottom: 1px solid var(--c-line); background: var(--c-surface); }
-.console-brand { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 8px; background: var(--c-text); color: var(--c-surface); font-size: .75rem; font-weight: 760; }
+.console-brand { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; }
 .console-title, .console-runtime, .console-resolution { display: grid; }
 .console-title strong { font-size: .875rem; }
 .console-title small, .console-runtime small, .console-resolution small { margin-top: 3px; color: var(--c-muted); font-size: .625rem; }

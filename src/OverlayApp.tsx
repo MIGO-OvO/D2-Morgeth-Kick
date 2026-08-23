@@ -32,7 +32,7 @@ export default function OverlayApp() {
   const progress = snapshot.status === "completed" ? 100 : Math.max(0, Math.min(100, ((snapshot.phaseIndex + 0.25) / 7) * 100));
 
   return (
-    <div className={`overlay-shell ${snapshot.status}`}>
+    <div className={`overlay-shell ${snapshot.status}`} style={{ opacity: config.overlayOpacity }}>
       <span className="sr-only" role="status" aria-live="polite">{statusLabels[snapshot.status]}，{snapshot.phaseName}</span>
       <div className="overlay-status">
         <span className={`status-dot ${snapshot.status}`} />

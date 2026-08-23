@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import type {
   AppConfig,
   AppliedOffsets,
@@ -40,6 +41,7 @@ export const defaultConfig: AppConfig = {
     finisher: "KeyG",
   },
   overlayVisible: true,
+  overlayOpacity: 0.88,
   usageGuideSeen: false,
 };
 
@@ -155,6 +157,18 @@ export async function setOverlayVisible(visible: boolean): Promise<boolean> {
   if (isTauri()) return invoke<boolean>("set_overlay_visible", { visible });
   mockConfig.overlayVisible = visible;
   return visible;
+}
+
+export async function minimizeWindow(): Promise<void> {
+  if (isTauri()) await getCurrentWindow().minimize();
+}
+
+export async function toggleMaximizeWindow(): Promise<void> {
+  if (isTauri()) await getCurrentWindow().toggleMaximize();
+}
+
+export async function closeWindow(): Promise<void> {
+  if (isTauri()) await getCurrentWindow().close();
 }
 
 export async function onRuntimeState(

@@ -161,6 +161,7 @@ pub struct AppConfig {
     pub hotkeys: HotkeyConfig,
     pub game_keys: GameKeyConfig,
     pub overlay_visible: bool,
+    pub overlay_opacity: f64,
     pub usage_guide_seen: bool,
 }
 
@@ -183,6 +184,7 @@ impl Default for AppConfig {
             hotkeys: HotkeyConfig::default(),
             game_keys: GameKeyConfig::default(),
             overlay_visible: true,
+            overlay_opacity: 0.88,
             usage_guide_seen: false,
         }
     }
@@ -214,6 +216,9 @@ impl AppConfig {
             if !value.is_finite() || !(0.0..=60.0).contains(&value) {
                 return Err(format!("{name} 必须在 0 到 60 秒之间"));
             }
+        }
+        if !self.overlay_opacity.is_finite() || !(0.3..=1.0).contains(&self.overlay_opacity) {
+            return Err("悬浮窗透明度必须在 30% 到 100% 之间".into());
         }
         self.hotkeys.shortcuts()?;
         self.game_keys.applied()?;
@@ -327,5 +332,22 @@ mod tests {
             ..AppConfig::default()
         };
         assert_eq!(config.validate().unwrap_err(), "启动热键和停止热键不能相同");
+    }
+
+    #[test]
+    fn overlay_opacity_stays_within_user_control_range() {
+        let too_transparent = AppConfig {
+            overlay_opacity: 0.29,
+            ..AppConfig::default()
+        };
+        let fully_visible = AppConfig {
+            overlay_opacity: 1.0,
+            ..AppConfig::default()
+        };
+        assert_eq!(
+            too_transparent.validate().unwrap_err(),
+            "悬浮窗透明度必须在 30% 到 100% 之间"
+        );
+        assert!(fully_visible.validate().is_ok());
     }
 }

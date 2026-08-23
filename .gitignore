@@ -3,5 +3,6 @@ dist/
 src-tauri/target/
 .impeccable/
 .impeccable-capture/
+output/
 *.log
 .DS_Store
