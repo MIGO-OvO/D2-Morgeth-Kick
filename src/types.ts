@@ -61,7 +61,6 @@ export interface AppConfig {
 export interface AppliedOffsets {
   adsScale: number;
   lookScale: number;
-  fovScale: number;
   firstAds: [number, number];
   firstHip: [number, number];
   voidArrow: [number, number];

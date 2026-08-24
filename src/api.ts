@@ -22,7 +22,7 @@ export const defaultConfig: AppConfig = {
   referenceFieldOfView: 100,
   firstAimMode: "ads",
   firstAdsBase: [-2600, 50],
-  firstHipBase: [-1600, 31],
+  firstHipBase: [-1300, 25],
   voidArrowBase: [-300, 81],
   voidArrowTrim: [0, 0],
   sprintBase: [280, 0],
@@ -107,22 +107,17 @@ function startMock() {
 }
 
 export function calculateAppliedOffsets(config: AppConfig): AppliedOffsets {
-  const fovScale =
-    Math.tan((config.fieldOfView * Math.PI) / 360) /
-    Math.tan((config.referenceFieldOfView * Math.PI) / 360);
   const adsScale =
     (config.referenceLookSensitivity * config.referenceAdsModifier) /
-    (config.lookSensitivity * config.adsModifier) *
-    fovScale;
+    (config.lookSensitivity * config.adsModifier);
   const lookScale =
-    (config.referenceLookSensitivity / config.lookSensitivity) * fovScale;
+    config.referenceLookSensitivity / config.lookSensitivity;
   const apply = (base: [number, number], scale: number, trim: [number, number] = [0, 0]) =>
     base.map((value, index) => Math.round(value * scale + trim[index])) as [number, number];
 
   return {
     adsScale,
     lookScale,
-    fovScale,
     firstAds: apply(config.firstAdsBase, adsScale),
     firstHip: apply(config.firstHipBase, lookScale),
     voidArrow: apply(config.voidArrowBase, lookScale, config.voidArrowTrim),
@@ -181,8 +176,8 @@ export async function checkForAppUpdate(): Promise<AppUpdate | null> {
     if (!import.meta.env.DEV || !new URLSearchParams(window.location.search).has("mockUpdate")) return null;
     return {
       available: true,
-      currentVersion: "0.3.0",
-      version: "0.3.1",
+      currentVersion: "0.3.1",
+      version: "0.3.2",
       date: new Date().toISOString(),
       body: "改进更新提醒，并修复长时间运行时的状态同步。",
       rawJson: {},
@@ -193,7 +188,7 @@ export async function checkForAppUpdate(): Promise<AppUpdate | null> {
 }
 
 export async function getAppVersion(): Promise<string> {
-  return isTauri() ? getVersion() : "0.3.0";
+  return isTauri() ? getVersion() : "0.3.1";
 }
 
 export async function installAppUpdate(

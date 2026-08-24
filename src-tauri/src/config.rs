@@ -190,7 +190,7 @@ impl Default for AppConfig {
             reference_field_of_view: 100.0,
             first_aim_mode: FirstAimMode::Ads,
             first_ads_base: [-2600, 50],
-            first_hip_base: [-1600, 31],
+            first_hip_base: [-1300, 25],
             void_arrow_base: [-300, 81],
             void_arrow_trim: [0, 0],
             sprint_base: [280, 0],
@@ -257,17 +257,10 @@ impl AppConfig {
     pub fn ads_scale(&self) -> f64 {
         (self.reference_look_sensitivity * self.reference_ads_modifier)
             / (self.look_sensitivity * self.ads_modifier)
-            * self.fov_scale()
     }
 
     pub fn look_scale(&self) -> f64 {
-        self.reference_look_sensitivity / self.look_sensitivity * self.fov_scale()
-    }
-
-    pub fn fov_scale(&self) -> f64 {
-        let current_half_angle = (self.field_of_view.to_radians() / 2.0).tan();
-        let reference_half_angle = (self.reference_field_of_view.to_radians() / 2.0).tan();
-        current_half_angle / reference_half_angle
+        self.reference_look_sensitivity / self.look_sensitivity
     }
 
     pub fn first_ads_offset(&self) -> [i32; 2] {
@@ -337,7 +330,7 @@ mod tests {
         let config = AppConfig::default();
         assert_eq!(config.first_aim_mode, FirstAimMode::Ads);
         assert_eq!(config.first_ads_offset(), [-2600, 50]);
-        assert_eq!(config.first_hip_offset(), [-1600, 31]);
+        assert_eq!(config.first_hip_offset(), [-1300, 25]);
         assert_eq!(config.void_arrow_offset(), [-300, 81]);
         assert_eq!(config.sprint_offset(), [280, 0]);
     }
@@ -351,22 +344,26 @@ mod tests {
             ..AppConfig::default()
         };
         assert_eq!(config.first_ads_offset(), [-2600, 50]);
-        assert_eq!(config.first_hip_offset(), [-2400, 47]);
+        assert_eq!(config.first_hip_offset(), [-1950, 38]);
         assert_eq!(config.void_arrow_offset(), [-445, 119]);
     }
 
     #[test]
-    fn fov_uses_tangent_projection_scaling() {
-        let config = AppConfig {
-            field_of_view: 90.0,
+    fn fov_does_not_change_world_turn_mouse_counts() {
+        let reference = AppConfig {
+            first_hip_base: [-1300, 25],
+            field_of_view: 100.0,
             ..AppConfig::default()
         };
-        let expected = (45_f64.to_radians()).tan() / (50_f64.to_radians()).tan();
-        assert!((config.fov_scale() - expected).abs() < 1e-10);
-        assert_eq!(config.first_ads_offset(), [-2182, 42]);
-        assert_eq!(config.first_hip_offset(), [-1343, 26]);
-        assert_eq!(config.void_arrow_offset(), [-252, 68]);
-        assert_eq!(config.sprint_offset(), [235, 0]);
+        let wider_fov = AppConfig {
+            field_of_view: 105.0,
+            ..reference.clone()
+        };
+        assert_eq!(reference.first_hip_offset(), [-1300, 25]);
+        assert_eq!(wider_fov.first_hip_offset(), [-1300, 25]);
+        assert_eq!(wider_fov.first_ads_offset(), reference.first_ads_offset());
+        assert_eq!(wider_fov.void_arrow_offset(), reference.void_arrow_offset());
+        assert_eq!(wider_fov.sprint_offset(), reference.sprint_offset());
     }
 
     #[test]
@@ -396,7 +393,7 @@ mod tests {
         assert_eq!(config.field_of_view, 100.0);
         assert_eq!(config.reference_field_of_view, 100.0);
         assert_eq!(config.first_aim_mode, FirstAimMode::Ads);
-        assert_eq!(config.first_hip_base, [-1600, 31]);
+        assert_eq!(config.first_hip_base, [-1300, 25]);
         assert!(config.validate().is_ok());
     }
 

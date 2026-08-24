@@ -257,7 +257,7 @@ function VectorEditor({
         <NumberField label={trim ? "X 微调" : "X 基准"} value={values[0]} onChange={(value) => change([value, values[1]])} />
         <NumberField label={trim ? "Y 微调" : "Y 基准"} value={values[1]} onChange={(value) => change([values[0], value])} />
       </div>
-      {trim && <div className="base-note">基准 {base[0]}, {base[1]} · 当前值已换算灵敏度与 FOV</div>}
+      {trim && <div className="base-note">基准 {base[0]}, {base[1]} · 当前值已换算视角灵敏度</div>}
     </section>
   );
 }
@@ -292,7 +292,7 @@ export default function App() {
   const [selectedVector, setSelectedVector] = useState<"first" | "void" | "sprint">("void");
   const [theme, setTheme] = useState<Theme>(resolveTheme);
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
-  const [appVersion, setAppVersion] = useState("0.3.0");
+  const [appVersion, setAppVersion] = useState("0.3.1");
   const [updateNotice, setUpdateNotice] = useState<UpdateNotice>({ phase: "idle" });
   const readyRef = useRef(false);
   const pendingUpdateRef = useRef<AppUpdate | null>(null);
@@ -724,7 +724,7 @@ export default function App() {
                 <NumberField label="高度" value={config.manualHeight} min={480} max={4320} onChange={(value) => updateConfig("manualHeight", value)} unit="px" />
               </div>
             )}
-            <div className="subsection-title"><span>游戏内设置</span><small>参考 15 / 1.00 / 100°</small></div>
+            <div className="subsection-title"><span>游戏内设置</span><small>灵敏度参考 15 / 1.00</small></div>
             <div className="game-settings-grid">
               <NumberField label="视角灵敏度" value={config.lookSensitivity} min={1} max={100} step={1} onChange={(value) => updateConfig("lookSensitivity", value)} />
               <NumberField label="瞄准灵敏度" value={config.adsModifier} min={0.5} max={1.5} step={0.1} onChange={(value) => updateConfig("adsModifier", value)} />
@@ -733,9 +733,8 @@ export default function App() {
             <div className="scale-readout">
               <div><span>ADS 距离系数</span><strong>{applied.adsScale.toFixed(3)}×</strong></div>
               <div><span>腰射距离系数</span><strong>{applied.lookScale.toFixed(3)}×</strong></div>
-              <div><span>FOV 投影系数</span><strong>{applied.fovScale.toFixed(3)}×</strong></div>
             </div>
-            <p className="info-note">按 15 / 1.00 / 100° 的参考设置换算，FOV 使用视场投影比例。实际落点仍建议在游戏内微调。</p>
+            <p className="info-note">按 15 / 1.00 的参考灵敏度换算相对鼠标计数。FOV 仅用于设置核对，不改变固定世界方向所需的转向量。</p>
           </section>
 
           <section className={`calibration-column ${tab === "aim" ? "mobile-active" : ""}`} aria-labelledby="aim-title">
@@ -750,6 +749,9 @@ export default function App() {
             <p className="mode-note">{usesAds
               ? "按住右键完成首次转向；需要无礼言论的 20 Zoom 作为校准基准。"
               : "全程腰射完成首次转向并直接近战；使用普通视角灵敏度换算。"}</p>
+            <p className="axis-note" role="note">
+              <strong>坐标方向：</strong>X 正值向右、负值向左；Y 正值向下、负值向上。Y 轴采用屏幕坐标，与数学直角坐标系方向相反。
+            </p>
             <AimPreview label={selectedPreview.label} value={selectedPreview.value} />
             <VectorEditor
               title={firstAimLabel}

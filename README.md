@@ -15,7 +15,7 @@ D2 Morgeth Kick 是一款 Windows 动作校准工具。它基于原项目重构�
 
 这不是自动刷取工具。当前版本不识别 Boss 或玩家状态，也不会自动循环、点击地图或收集掉落。程序只按保存的参数执行一次序列。默认按 F10 会中止当前步骤并释放已按下的键位。
 
-[打开产品门户](https://migo-ovo.github.io/D2-Morgeth-Kick/) · [GitHub 下载 v0.3.0](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.0-Windows-x64-setup.exe) · [夸克网盘下载](https://pan.quark.cn/s/69e59cd59e04)
+[打开产品门户](https://migo-ovo.github.io/D2-Morgeth-Kick/) · [GitHub 下载 v0.3.1](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.1-Windows-x64-setup.exe) · [夸克网盘下载](https://pan.quark.cn/s/69e59cd59e04)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/app-dark.png">
@@ -25,7 +25,7 @@ D2 Morgeth Kick 是一款 Windows 动作校准工具。它基于原项目重构�
 ## 功能
 
 - 自动读取 Destiny 2 客户区尺寸，也可手动指定分辨率。
-- 按 15 / 1.00 / 100° 参考设置换算 ADS 与腰射移动量，支持自定义 FOV。
+- 按 15 / 1.00 参考灵敏度换算 ADS 与腰射移动量；FOV 作为游戏设置核对项，不参与相对鼠标计数换算。
 - 在“ADS 转向”和“腰射直投”之间切换，并分别保存首次转向校准值。
 - 调整首次转向、虚空箭落点和冲刺方向。
 - 独立恢复默认动作参数或默认键位，互不覆盖。
@@ -45,7 +45,7 @@ D2 Morgeth Kick 是一款 Windows 动作校准工具。它基于原项目重构�
 - Destiny 2 使用无边框或窗口模式，以便程序读取客户区尺寸
 - 游戏与 D2 Morgeth Kick 使用相同的 Windows 完整性级别
 
-序列依赖游戏内按键、FOV、灵敏度和配装。首次使用前请逐项核对设置，并在可控场景中校准。程序会按设置的 FOV 换算鼠标移动量，实际落点仍建议在游戏内微调。
+序列依赖游戏内按键、FOV、灵敏度和配装。首次使用前请逐项核对设置，并在可控场景中校准。FOV 会改变画面视野，但固定世界方向的相对鼠标转向量保持不变；实际落点仍建议在游戏内微调。
 
 ### 首次启动前准备
 
@@ -64,10 +64,10 @@ D2 Morgeth Kick 是一款 Windows 动作校准工具。它基于原项目重构�
 
 | 渠道 | 下载 | 说明 |
 | --- | --- | --- |
-| GitHub Release | [下载 v0.3.0 安装包](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.0-Windows-x64-setup.exe) | 官方发布与应用内更新来源 |
+| GitHub Release | [下载 v0.3.1 安装包](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.1-Windows-x64-setup.exe) | 官方发布与应用内更新来源 |
 | 夸克网盘 | [打开分享链接](https://pan.quark.cn/s/69e59cd59e04) | 手动下载备用渠道 |
 
-安装包文件名包含版本号：`D2-Morgeth-Kick-v0.3.0-Windows-x64-setup.exe`。运行安装程序后从开始菜单启动 D2 Morgeth Kick。
+安装包文件名包含版本号：`D2-Morgeth-Kick-v0.3.1-Windows-x64-setup.exe`。运行安装程序后从开始菜单启动 D2 Morgeth Kick。
 
 Windows 可能会在首次运行未签名安装包时显示 SmartScreen 提示。请核对下载地址是否属于本仓库，再决定是否继续。
 
@@ -110,9 +110,11 @@ v0.3.0 是第一个支持应用内更新的版本。从 v0.2.1 或更早版本�
 
 | 分组 | 可调内容 | 说明 |
 | --- | --- | --- |
-| 显示与灵敏度 | 分辨率、视角灵敏度、瞄准灵敏度、视野范围 (FOV) | 用于换算鼠标移动量 |
+| 显示与灵敏度 | 分辨率、视角灵敏度、瞄准灵敏度、视野范围 (FOV) | 灵敏度用于换算鼠标移动量；FOV 用于设置核对 |
 | 瞄准偏移 | 首次转向模式、ADS / 腰射独立基准、虚空箭、冲刺方向 | 显示基准值、微调值和最终应用值 |
 | 动作时序 | 六项等待参数 | 每项限制在程序允许的范围内；终结动作后立即结束 |
+
+瞄准偏移采用屏幕坐标：X 正值向右、负值向左；Y 正值向下、负值向上。Y 轴方向与数学直角坐标系相反。
 
 视角灵敏度支持 1–100、步进 1；瞄准灵敏度支持 0.5–1.5、步进 0.1；视野范围支持 55–105、步进 1。
 
@@ -200,7 +202,7 @@ Rust 核心独占键鼠执行权，`portal/` 是独立的 GitHub Pages 产品门
 | `src-tauri/src/lib.rs` | 注册十个 Tauri 命令，动态注册启停全局热键，并处理窗口关闭或更新安装前的取消、执行线程退出与输入释放 |
 | `src-tauri/src/engine.rs` | 七阶段动作序列执行器。等待循环每 10ms 检查一次取消标志，镜头移动拆成小步执行，任何结果下都以 `release_all()` 收尾 |
 | `src-tauri/src/runtime.rs` | 以 `Arc<AppState>` 共享配置、状态、更新互斥锁和原子标志。状态变化通过 `runtime-state` 事件同步到主窗口与悬浮窗 |
-| `src-tauri/src/config.rs` | `AppConfig` 校验、`settings.json` 读写，以及按参考灵敏度与 FOV 换算 ADS / 腰射距离系数的偏移计算 |
+| `src-tauri/src/config.rs` | `AppConfig` 校验、`settings.json` 读写，以及按参考灵敏度换算 ADS / 腰射距离系数的偏移计算 |
 | `src-tauri/src/input.rs` | Windows `SendInput` 封装：扫描码按键、相对鼠标移动，并统一释放 W/A/S/D、当前操作键映射与鼠标右键 |
 | `src-tauri/src/resolution.rs` | 枚举可见窗口，按 `destiny2.exe` 进程找到 Destiny 2，读取客户区位置、尺寸与 DPI；找不到时回退到主显示器尺寸 |
 | `portal/` | 静态 GitHub Pages 门户：产品介绍、界面预览，并通过 GitHub API 指向最新 Release 下载 |
