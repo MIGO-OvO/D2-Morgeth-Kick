@@ -1,7 +1,7 @@
 # D2 Morgeth Kick
 
 <p align="center">
-  <img src="portal/morgeth-logo.png" width="192" alt="D2 Morgeth Kick 项目 Logo">
+  <img src="docs/morgeth-logo-rounded.png" width="192" alt="D2 Morgeth Kick 项目 Logo">
 </p>
 
 [![GitHub Pages](https://img.shields.io/badge/产品门户-GitHub%20Pages-1769e0?logo=github)](https://migo-ovo.github.io/D2-Morgeth-Kick/)
