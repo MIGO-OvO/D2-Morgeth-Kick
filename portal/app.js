@@ -51,11 +51,13 @@ fetch("https://api.github.com/repos/MIGO-OvO/D2-Morgeth-Kick/releases/latest", {
   .then((release) => {
     const version = document.querySelector("#release-version");
     if (version && release.tag_name) version.textContent = release.tag_name;
-    const asset = release.assets?.find((item) => item.name === "D2-Morgeth-Kick-Windows-x64-setup.exe");
+    const asset = release.assets?.find((item) => (
+      item.name.startsWith("D2-Morgeth-Kick-v")
+      && item.name.endsWith("-Windows-x64-setup.exe")
+    ));
     if (asset?.browser_download_url) {
-      document.querySelectorAll('a[href*="/releases/latest/download/"]').forEach((link) => {
-        link.href = asset.browser_download_url;
-      });
+      const downloadLink = document.querySelector("#download-link");
+      if (downloadLink) downloadLink.href = asset.browser_download_url;
     }
   })
   .catch(() => undefined);

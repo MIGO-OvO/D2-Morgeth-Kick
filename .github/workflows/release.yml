@@ -55,4 +55,4 @@ jobs:
           uploadUpdaterJson: true
           updaterJsonPreferNsis: true
           uploadUpdaterSignatures: true
-          releaseAssetNamePattern: "D2-Morgeth-Kick-Windows-x64[setup][ext]"
+          releaseAssetNamePattern: "D2-Morgeth-Kick-v[version]-Windows-x64[setup][ext]"

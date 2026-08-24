@@ -15,7 +15,7 @@ D2 Morgeth Kick 是一款 Windows 动作校准工具。它基于原项目重构�
 
 这不是自动刷取工具。当前版本不识别 Boss 或玩家状态，也不会自动循环、点击地图或收集掉落。程序只按保存的参数执行一次序列。默认按 F10 会中止当前步骤并释放已按下的键位。
 
-[打开产品门户](https://migo-ovo.github.io/D2-Morgeth-Kick/) · [下载最新 Windows 安装包](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-Windows-x64-setup.exe)
+[打开产品门户](https://migo-ovo.github.io/D2-Morgeth-Kick/) · [GitHub 下载 v0.3.0](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.0-Windows-x64-setup.exe) · [夸克网盘下载](https://pan.quark.cn/s/69e59cd59e04)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/app-dark.png">
@@ -60,7 +60,14 @@ D2 Morgeth Kick 是一款 Windows 动作校准工具。它基于原项目重构�
 
 ## 安装 (Installation)
 
-从 [Latest Release](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest) 下载 `D2-Morgeth-Kick-Windows-x64-setup.exe`，运行安装程序后从开始菜单启动 D2 Morgeth Kick。
+### 下载渠道
+
+| 渠道 | 下载 | 说明 |
+| --- | --- | --- |
+| GitHub Release | [下载 v0.3.0 安装包](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.0-Windows-x64-setup.exe) | 官方发布与应用内更新来源 |
+| 夸克网盘 | [打开分享链接](https://pan.quark.cn/s/69e59cd59e04) | 手动下载备用渠道 |
+
+安装包文件名包含版本号：`D2-Morgeth-Kick-v0.3.0-Windows-x64-setup.exe`。运行安装程序后从开始菜单启动 D2 Morgeth Kick。
 
 Windows 可能会在首次运行未签名安装包时显示 SmartScreen 提示。请核对下载地址是否属于本仓库，再决定是否继续。
 
@@ -139,7 +146,10 @@ $env:TAURI_SIGNING_PRIVATE_KEY="C:\安全目录\d2-morgeth-kick.key"
 npm run tauri build
 ```
 
-NSIS 安装包及其 updater 签名会出现在 `src-tauri/target/release/bundle/nsis/`。签名私钥不能提交到仓库；丢失私钥后，已安装客户端将无法验证后续更新。
+NSIS 安装包及其 updater 签名会出现在 `src-tauri/target/release/bundle/nsis/`。
+GitHub Release 上传时会将安装包重命名为包含版本号的
+`D2-Morgeth-Kick-v<version>-Windows-x64-setup.exe`。签名私钥不能提交到仓库；
+丢失私钥后，已安装客户端将无法验证后续更新。
 
 ### 发布更新
 

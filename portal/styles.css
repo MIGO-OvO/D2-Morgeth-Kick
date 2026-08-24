@@ -86,12 +86,16 @@ main { overflow: hidden; }
 .hero h1 { margin: 28px 0 0; font-family: var(--font-display); font-size: clamp(3.25rem, 7.6vw, 6.75rem); font-weight: 720; line-height: .98; letter-spacing: -.055em; text-wrap: balance; }
 .hero h1 span { color: var(--text-soft); }
 .hero-intro { max-width: 45rem; margin: 34px auto 0; color: var(--text-soft); font-size: 1.0625rem; line-height: 1.8; text-wrap: pretty; }
-.hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 34px; }
+.download-label { margin: 34px 0 0; color: var(--text-muted); font-family: var(--font-mono); font-size: .6875rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+.hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 10px; }
 .button { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 0 19px; border: 1px solid var(--line-strong); border-radius: 10px; font-size: .875rem; font-weight: 680; text-decoration: none; transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease; }
+.button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .button.primary { border-color: var(--brand); background: var(--brand); color: var(--on-brand); }
 .button.primary:hover { border-color: var(--blue); background: var(--blue); color: oklch(98% 0.004 255); }
 .button.secondary { background: transparent; color: var(--text); }
 .button.secondary:hover { border-color: var(--text-muted); }
+.button.source { border-color: transparent; background: transparent; color: var(--text-soft); }
+.button.source:hover { color: var(--text); }
 .release-note { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; margin: 19px 0 0; color: var(--text-muted); font-size: .75rem; }
 .release-note span:last-child::before { content: "·"; margin-right: 12px; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
