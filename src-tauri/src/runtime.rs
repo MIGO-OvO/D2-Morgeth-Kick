@@ -44,6 +44,7 @@ pub struct AppState {
     pub running: AtomicBool,
     pub cancel: AtomicBool,
     pub updating: AtomicBool,
+    pub hotkey_capture_active: AtomicBool,
     transition: Mutex<()>,
 }
 
@@ -59,6 +60,7 @@ impl AppState {
             running: AtomicBool::new(false),
             cancel: AtomicBool::new(false),
             updating: AtomicBool::new(false),
+            hotkey_capture_active: AtomicBool::new(false),
             transition: Mutex::new(()),
         }
     }

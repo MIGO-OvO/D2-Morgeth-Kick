@@ -8,13 +8,20 @@ use std::sync::{atomic::Ordering, Arc};
 use tauri::{Emitter, Manager, PhysicalPosition, Position, State};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
-use config::AppConfig;
+use config::{AppConfig, HotkeyBinding, MouseShortcut};
 use runtime::{AppState, RuntimeSnapshot, RuntimeStatus};
 
-fn register_shortcuts(app: &tauri::AppHandle, shortcuts: [Shortcut; 2]) -> Result<(), String> {
+fn keyboard_shortcuts(bindings: [HotkeyBinding; 2]) -> Vec<Shortcut> {
+    bindings
+        .into_iter()
+        .filter_map(HotkeyBinding::keyboard)
+        .collect()
+}
+
+fn register_shortcuts(app: &tauri::AppHandle, bindings: [HotkeyBinding; 2]) -> Result<(), String> {
     let manager = app.global_shortcut();
     let mut registered = Vec::new();
-    for shortcut in shortcuts {
+    for shortcut in keyboard_shortcuts(bindings) {
         if let Err(error) = manager.register(shortcut) {
             for registered_shortcut in registered {
                 let _ = manager.unregister(registered_shortcut);
@@ -26,9 +33,9 @@ fn register_shortcuts(app: &tauri::AppHandle, shortcuts: [Shortcut; 2]) -> Resul
     Ok(())
 }
 
-fn restore_shortcuts(app: &tauri::AppHandle, shortcuts: [Shortcut; 2]) {
+fn restore_shortcuts(app: &tauri::AppHandle, bindings: [HotkeyBinding; 2]) {
     let manager = app.global_shortcut();
-    for shortcut in shortcuts {
+    for shortcut in keyboard_shortcuts(bindings) {
         if !manager.is_registered(shortcut) {
             let _ = manager.register(shortcut);
         }
@@ -37,23 +44,23 @@ fn restore_shortcuts(app: &tauri::AppHandle, shortcuts: [Shortcut; 2]) {
 
 fn replace_shortcuts(
     app: &tauri::AppHandle,
-    old_shortcuts: [Shortcut; 2],
-    new_shortcuts: [Shortcut; 2],
+    old_bindings: [HotkeyBinding; 2],
+    new_bindings: [HotkeyBinding; 2],
 ) -> Result<(), String> {
-    if old_shortcuts == new_shortcuts {
+    if old_bindings == new_bindings {
         return Ok(());
     }
     let manager = app.global_shortcut();
-    for shortcut in old_shortcuts {
+    for shortcut in keyboard_shortcuts(old_bindings) {
         if manager.is_registered(shortcut) {
             if let Err(error) = manager.unregister(shortcut) {
-                restore_shortcuts(app, old_shortcuts);
+                restore_shortcuts(app, old_bindings);
                 return Err(format!("无法注销原有全局热键 {shortcut}：{error}"));
             }
         }
     }
-    if let Err(error) = register_shortcuts(app, new_shortcuts) {
-        restore_shortcuts(app, old_shortcuts);
+    if let Err(error) = register_shortcuts(app, new_bindings) {
+        restore_shortcuts(app, old_bindings);
         return Err(error);
     }
     Ok(())
@@ -80,11 +87,11 @@ fn save_config(
         .lock()
         .unwrap_or_else(|poison| poison.into_inner())
         .clone();
-    let old_shortcuts = old_config.hotkeys.shortcuts()?;
-    let new_shortcuts = config.hotkeys.shortcuts()?;
-    replace_shortcuts(&app, old_shortcuts, new_shortcuts)?;
+    let old_bindings = old_config.hotkeys.bindings()?;
+    let new_bindings = config.hotkeys.bindings()?;
+    replace_shortcuts(&app, old_bindings, new_bindings)?;
     if let Err(error) = config::save(&app, &config) {
-        let _ = replace_shortcuts(&app, new_shortcuts, old_shortcuts);
+        let _ = replace_shortcuts(&app, new_bindings, old_bindings);
         return Err(error);
     }
     *state
@@ -154,16 +161,23 @@ fn stop_internal(app: &tauri::AppHandle, state: &Arc<AppState>) -> RuntimeSnapsh
     }
 }
 
+#[tauri::command]
+fn set_hotkey_capture_active(state: State<'_, Arc<AppState>>, active: bool) {
+    state.hotkey_capture_active.store(active, Ordering::Release);
+}
+
 fn release_configured_inputs(state: &Arc<AppState>) {
-    let configured_keys = state
+    let configured_inputs = state
         .config
         .lock()
         .unwrap_or_else(|poison| poison.into_inner())
         .game_keys
         .applied()
-        .map(|keys| keys.all())
-        .unwrap_or_default();
-    input::release_all(&configured_keys);
+        .map(|keys| keys.all());
+    match configured_inputs {
+        Ok(inputs) => input::release_all(&inputs),
+        Err(_) => input::release_all(&[]),
+    }
 }
 
 fn sync_overlay_to_game(app: &tauri::AppHandle, state: &Arc<AppState>) {
@@ -274,6 +288,49 @@ fn restart_after_update(app: tauri::AppHandle, state: State<'_, Arc<AppState>>) 
     app.restart();
 }
 
+fn spawn_mouse_hotkey_monitor(app: tauri::AppHandle, state: Arc<AppState>) {
+    std::thread::spawn(move || {
+        let mut previous = input::polled_mouse_buttons();
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(10));
+            let current = input::polled_mouse_buttons();
+            if !state.hotkey_capture_active.load(Ordering::Acquire) {
+                for (index, (&pressed, &was_pressed)) in
+                    current.iter().zip(previous.iter()).enumerate()
+                {
+                    if !pressed || was_pressed {
+                        continue;
+                    }
+                    let button = match index {
+                        0 => input::MouseButton::Middle,
+                        1 => input::MouseButton::Back,
+                        _ => input::MouseButton::Forward,
+                    };
+                    let bindings = state
+                        .config
+                        .lock()
+                        .unwrap_or_else(|poison| poison.into_inner())
+                        .hotkeys
+                        .bindings();
+                    let Ok([start_binding, stop_binding]) = bindings else {
+                        continue;
+                    };
+                    let pressed_shortcut = MouseShortcut {
+                        button,
+                        modifiers: input::modifier_mask(),
+                    };
+                    if start_binding == HotkeyBinding::Mouse(pressed_shortcut) {
+                        let _ = start_internal(app.clone(), Arc::clone(&state));
+                    } else if stop_binding == HotkeyBinding::Mouse(pressed_shortcut) {
+                        stop_internal(&app, &state);
+                    }
+                }
+            }
+            previous = current;
+        }
+    });
+}
+
 pub fn run() {
     let global_shortcut = tauri_plugin_global_shortcut::Builder::new()
         .with_handler(|app, shortcut, event| {
@@ -281,18 +338,21 @@ pub fn run() {
                 return;
             }
             let state = app.state::<Arc<AppState>>().inner().clone();
-            let shortcuts = state
+            if state.hotkey_capture_active.load(Ordering::Acquire) {
+                return;
+            }
+            let bindings = state
                 .config
                 .lock()
                 .unwrap_or_else(|poison| poison.into_inner())
                 .hotkeys
-                .shortcuts();
-            let Ok([start_shortcut, stop_shortcut]) = shortcuts else {
+                .bindings();
+            let Ok([start_binding, stop_binding]) = bindings else {
                 return;
             };
-            if *shortcut == start_shortcut {
+            if start_binding == HotkeyBinding::Keyboard(*shortcut) {
                 let _ = start_internal(app.clone(), state);
-            } else if *shortcut == stop_shortcut {
+            } else if stop_binding == HotkeyBinding::Keyboard(*shortcut) {
                 stop_internal(app, &state);
             }
         })
@@ -303,12 +363,13 @@ pub fn run() {
         .setup(|app| {
             let config = config::load(app.handle()).unwrap_or_else(|_| AppConfig::default());
             let overlay_visible = config.overlay_visible;
-            let shortcuts = config.hotkeys.shortcuts()?;
+            let bindings = config.hotkeys.bindings()?;
             let state = Arc::new(AppState::new(config));
             app.manage(Arc::clone(&state));
+            spawn_mouse_hotkey_monitor(app.handle().clone(), Arc::clone(&state));
             app.handle()
                 .plugin(tauri_plugin_updater::Builder::new().build())?;
-            if let Err(error) = register_shortcuts(app.handle(), shortcuts) {
+            if let Err(error) = register_shortcuts(app.handle(), bindings) {
                 state.update(app.handle(), |runtime| {
                     runtime.status = RuntimeStatus::Error;
                     runtime.message = error;
@@ -341,6 +402,7 @@ pub fn run() {
             detect_resolution,
             start_sequence,
             stop_sequence,
+            set_hotkey_capture_active,
             set_overlay_visible,
             prepare_for_update,
             cancel_update_preparation,

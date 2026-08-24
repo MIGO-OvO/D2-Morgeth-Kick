@@ -15,7 +15,9 @@ D2 Morgeth Kick 是一款 Windows 动作校准工具。它基于原项目重构�
 
 这不是自动刷取工具。当前版本不识别 Boss 或玩家状态，也不会自动循环、点击地图或收集掉落。程序只按保存的参数执行一次序列。默认按 F10 会中止当前步骤并释放已按下的键位。
 
-[打开产品门户](https://migo-ovo.github.io/D2-Morgeth-Kick/) · [GitHub 下载 v0.3.1](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.1-Windows-x64-setup.exe) · [夸克网盘下载](https://pan.quark.cn/s/69e59cd59e04)
+[打开产品门户](https://migo-ovo.github.io/D2-Morgeth-Kick/) · [GitHub 下载 v0.3.2](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.2-Windows-x64-setup.exe) · [夸克网盘下载](https://pan.quark.cn/s/69e59cd59e04)
+
+反馈与交流：QQ群 **1104108070**
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/app-dark.png">
@@ -30,7 +32,7 @@ D2 Morgeth Kick 是一款 Windows 动作校准工具。它基于原项目重构�
 - 调整首次转向、虚空箭落点和冲刺方向。
 - 独立恢复默认动作参数或默认键位，互不覆盖。
 - 单独修改六项动作等待时间；终结技完成后流程立即结束。
-- 自定义程序启动/停止热键和游戏内操作按键，默认 F8 全局启动、F10 全局中止。
+- 点击键位框即可自动捕获键盘键、组合键、鼠标中键或侧键；默认 F8 全局启动、F10 全局中止。
 - 中止、报错或退出时释放已按下的键盘与鼠标输入。
 - 按 `destiny2.exe` 进程绑定的点击穿透悬浮窗：仅在游戏位于前台时显示，实时跟随客户区中上位置，并可调整透明度。
 - 主窗口使用与现有控制台风格一致的自定义标题栏。
@@ -51,7 +53,7 @@ D2 Morgeth Kick 是一款 Windows 动作校准工具。它基于原项目重构�
 
 1. 腿部护甲装备 3 个运动强化模组，近战属性推荐叠到 140。
 2. 装备棱镜分支职业，选择冰飞镖近战、虚空箭超能和飞升星相。
-3. 选择首次转向模式：ADS 转向需在二号位装备无礼言论；腰射直投可使用保持第一人称视角的枪械，不要使用刀剑。
+3. 固定二号位武器：ADS 转向需装备无礼言论；腰射直投也建议使用同一把无礼言论，不要换用轻质框架、具有移速效果的异域武器或刀剑。
 4. 调整软件设置中的视角灵敏度/瞄准灵敏度/视野范围与游戏内一致。
 5. 确保设置了切换冲刺的按键，游戏内和软件中的冲刺键需为切换冲刺。
 6. 进入游戏后不要移动角色或挪动准星，直接按启动热键开始流程。
@@ -64,10 +66,10 @@ D2 Morgeth Kick 是一款 Windows 动作校准工具。它基于原项目重构�
 
 | 渠道 | 下载 | 说明 |
 | --- | --- | --- |
-| GitHub Release | [下载 v0.3.1 安装包](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.1-Windows-x64-setup.exe) | 官方发布与应用内更新来源 |
+| GitHub Release | [下载 v0.3.2 安装包](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.2-Windows-x64-setup.exe) | 官方发布与应用内更新来源 |
 | 夸克网盘 | [打开分享链接](https://pan.quark.cn/s/69e59cd59e04) | 手动下载备用渠道 |
 
-安装包文件名包含版本号：`D2-Morgeth-Kick-v0.3.1-Windows-x64-setup.exe`。运行安装程序后从开始菜单启动 D2 Morgeth Kick。
+安装包文件名包含版本号：`D2-Morgeth-Kick-v0.3.2-Windows-x64-setup.exe`。运行安装程序后从开始菜单启动 D2 Morgeth Kick。
 
 Windows 可能会在首次运行未签名安装包时显示 SmartScreen 提示。请核对下载地址是否属于本仓库，再决定是否继续。
 
@@ -85,7 +87,7 @@ v0.3.0 是第一个支持应用内更新的版本。从 v0.2.1 或更早版本�
 
 1. 启动 Destiny 2，完成上面的首次启动准备，并确认窗口模式、两项灵敏度与 FOV。
 2. 打开 D2 Morgeth Kick，检查自动识别到的分辨率。
-3. 在“按键设置”中核对程序热键和游戏内操作映射；WASD 无需设置。
+3. 在“按键设置”中点击键位框并直接按下目标键，核对程序热键和游戏内操作映射；WASD 无需设置。
 4. 按实际情况调整瞄准偏移与等待时间。所有设置会自动保存。
 5. 让 Destiny 2 回到前台，保持角色和准星不动，按启动热键执行一次动作序列。
 6. 需要停止时按停止热键。悬浮窗会同步显示当前状态。
@@ -235,7 +237,7 @@ D2-Morgeth-Kick/
 
 ## 报告问题 (Issues)
 
-请在 [GitHub Issues](https://github.com/MIGO-OvO/D2-Morgeth-Kick/issues) 提交问题，并附上：
+欢迎加入反馈QQ群 **1104108070**，或在 [GitHub Issues](https://github.com/MIGO-OvO/D2-Morgeth-Kick/issues) 提交问题，并附上：
 
 - Windows 版本和系统缩放比例
 - Destiny 2 窗口模式与分辨率
@@ -260,4 +262,4 @@ D2 Morgeth Kick 是非官方开源项目，与 Bungie 无关联。Destiny 2 及�
 
 ## 维护者 (Contact)
 
-GitHub: [@MIGO-OvO](https://github.com/MIGO-OvO)
+GitHub: [@MIGO-OvO](https://github.com/MIGO-OvO) · 反馈QQ群：**1104108070**

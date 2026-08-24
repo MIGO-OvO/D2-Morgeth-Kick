@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+} from "react";
 import {
   calculateAppliedOffsets,
   checkForAppUpdate,
@@ -13,6 +22,7 @@ import {
   minimizeWindow,
   onRuntimeState,
   saveConfig,
+  setHotkeyCaptureActive,
   setOverlayVisible,
   startSequence,
   stopSequence,
@@ -33,10 +43,12 @@ import {
   buildHotkey,
   formatHotkey,
   formatKey,
-  gameKeyOptions,
-  hotkeyOptions,
-  parseHotkey,
-  type HotkeyModifier,
+  hotkeyModifiersFromEvent,
+  isGameKeyCode,
+  isHotkeyPrimaryCode,
+  isModifierCode,
+  isReservedMovementCode,
+  mouseBindingFromButton,
 } from "./keyboard";
 import { applyTheme, resolveTheme, THEME_STORAGE_KEY, type Theme } from "./theme";
 import morgethLogo from "../portal/morgeth-logo.png";
@@ -60,6 +72,22 @@ const STARTUP_UPDATE_DELAY_MS = 4_500;
 const PERIODIC_UPDATE_INTERVAL_MS = 12 * 60 * 60 * 1_000;
 const SKIPPED_UPDATE_STORAGE_KEY = "d2-morgeth-kick-skipped-update";
 const LEGACY_SKIPPED_UPDATE_STORAGE_KEY = "d2-morgath-kick-skipped-update";
+let hotkeyCaptureReleaseTimer: number | undefined;
+
+function suppressGlobalHotkeys(active: boolean) {
+  if (hotkeyCaptureReleaseTimer) {
+    window.clearTimeout(hotkeyCaptureReleaseTimer);
+    hotkeyCaptureReleaseTimer = undefined;
+  }
+  if (active) {
+    void setHotkeyCaptureActive(true);
+    return;
+  }
+  hotkeyCaptureReleaseTimer = window.setTimeout(() => {
+    void setHotkeyCaptureActive(false);
+    hotkeyCaptureReleaseTimer = undefined;
+  }, 200);
+}
 
 function getSkippedUpdate(): string | null {
   try {
@@ -148,43 +176,104 @@ function AppDialog({ title, description, onClose, children, wide = false }: AppD
   );
 }
 
-interface HotkeyFieldProps {
+interface KeyCaptureFieldProps {
   label: string;
   value: string;
   disabled: boolean;
+  mode: "hotkey" | "game";
   onChange: (value: string) => void;
 }
 
-function HotkeyField({ label, value, disabled, onChange }: HotkeyFieldProps) {
-  const parsed = parseHotkey(value);
-  const modifierLabels: Array<[HotkeyModifier, string]> = [
-    ["Control", "Ctrl"],
-    ["Shift", "Shift"],
-    ["Alt", "Alt"],
-    ["Super", "Win"],
-  ];
-  const updateModifier = (modifier: HotkeyModifier, checked: boolean) => {
-    const next = new Set(parsed.modifiers);
-    if (checked) next.add(modifier);
-    else next.delete(modifier);
-    onChange(buildHotkey(parsed.primary, next));
+function KeyCaptureField({ label, value, disabled, mode, onChange }: KeyCaptureFieldProps) {
+  const [recording, setRecording] = useState(false);
+  const [preview, setPreview] = useState("");
+  const [issue, setIssue] = useState("");
+
+  useEffect(() => {
+    if (!recording) return;
+    suppressGlobalHotkeys(true);
+    return () => suppressGlobalHotkeys(false);
+  }, [recording]);
+
+  const beginRecording = () => {
+    if (disabled) return;
+    setRecording(true);
+    setPreview("");
+    setIssue("");
   };
 
+  const commit = (binding: string) => {
+    onChange(binding);
+    setRecording(false);
+    setPreview("");
+    setIssue("");
+  };
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (!recording || disabled || event.repeat) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (mode === "hotkey") {
+      const modifiers = hotkeyModifiersFromEvent(event.nativeEvent);
+      if (isModifierCode(event.code)) {
+        setPreview(buildHotkey("等待主键…", modifiers));
+        return;
+      }
+      if (!isHotkeyPrimaryCode(event.code)) {
+        setIssue("暂不支持 " + (event.code || "该按键") + "，请按其他键");
+        return;
+      }
+      commit(buildHotkey(event.code, modifiers));
+      return;
+    }
+
+    if (isReservedMovementCode(event.code)) {
+      setIssue("W / A / S / D 已固定用于移动，不能重复绑定");
+      return;
+    }
+    if (!isGameKeyCode(event.code)) {
+      setIssue("暂不支持 " + (event.code || "该按键") + "，请按其他键");
+      return;
+    }
+    commit(event.code);
+  };
+
+  const handleMouseDown = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    if (!recording || disabled) return;
+    const mouseBinding = mouseBindingFromButton(event.button);
+    if (!mouseBinding) return;
+    event.preventDefault();
+    event.stopPropagation();
+    commit(mode === "hotkey"
+      ? buildHotkey(mouseBinding, hotkeyModifiersFromEvent(event.nativeEvent))
+      : mouseBinding);
+  };
+
+  const displayValue = recording
+    ? preview ? formatHotkey(preview) : "请按下目标按键…"
+    : mode === "hotkey" ? formatHotkey(value) : formatKey(value);
+
   return (
-    <fieldset className="hotkey-field" disabled={disabled}>
-      <legend>{label}</legend>
-      <div className="modifier-row">
-        {modifierLabels.map(([modifier, text]) => (
-          <label key={modifier}>
-            <input type="checkbox" checked={parsed.modifiers.has(modifier)} onChange={(event) => updateModifier(modifier, event.target.checked)} />
-            <span>{text}</span>
-          </label>
-        ))}
-      </div>
-      <select value={parsed.primary} onChange={(event) => onChange(buildHotkey(event.target.value, parsed.modifiers))} aria-label={`${label}主键`}>
-        {hotkeyOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
-    </fieldset>
+    <div className={"key-capture-field" + (recording ? " recording" : "") + (issue ? " invalid" : "")}>
+      <span className="key-capture-label">{label}</span>
+      <button
+        className="key-capture-button"
+        type="button"
+        disabled={disabled}
+        aria-label={label + "，当前为 " + (mode === "hotkey" ? formatHotkey(value) : formatKey(value)) + "。点击后按下新按键"}
+        aria-pressed={recording}
+        onClick={beginRecording}
+        onKeyDown={handleKeyDown}
+        onMouseDown={handleMouseDown}
+        onContextMenu={(event) => { if (recording) event.preventDefault(); }}
+        onBlur={() => setRecording(false)}
+      >
+        <kbd>{displayValue}</kbd>
+        <small>{recording ? "正在识别键盘、鼠标中键或侧键" : "点击后直接按键"}</small>
+      </button>
+      {issue && <span className="key-capture-error" role="alert">{issue}</span>}
+    </div>
   );
 }
 
@@ -292,7 +381,7 @@ export default function App() {
   const [selectedVector, setSelectedVector] = useState<"first" | "void" | "sprint">("void");
   const [theme, setTheme] = useState<Theme>(resolveTheme);
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
-  const [appVersion, setAppVersion] = useState("0.3.1");
+  const [appVersion, setAppVersion] = useState("0.3.2");
   const [updateNotice, setUpdateNotice] = useState<UpdateNotice>({ phase: "idle" });
   const readyRef = useRef(false);
   const pendingUpdateRef = useRef<AppUpdate | null>(null);
@@ -814,9 +903,14 @@ export default function App() {
           </button>
           <button type="button" onClick={resetParameters} title="保留键位与悬浮窗设置"><Icon name="reset" />恢复默认参数</button>
         </div>
-        <div className={`save-indicator ${saveState}`} aria-live="polite">
-          <span />
-          {saveState === "saving" ? "正在保存" : saveState === "error" ? "保存失败" : "设置已保存"}
+        <div className="footer-meta">
+          <span className="feedback-channel" title="问题反馈与交流QQ群">
+            反馈QQ群 <strong>1104108070</strong>
+          </span>
+          <div className={`save-indicator ${saveState}`} aria-live="polite">
+            <span />
+            {saveState === "saving" ? "正在保存" : saveState === "error" ? "保存失败" : "设置已保存"}
+          </div>
         </div>
       </footer>
 
@@ -825,12 +919,12 @@ export default function App() {
           <ol className="usage-steps">
             <li><span>1</span><div><strong>装备运动强化模组</strong><p>腿部护甲装备 3 个运动强化模组，近战属性推荐叠到 140。</p></div></li>
             <li><span>2</span><div><strong>使用指定棱镜配置</strong><p>装备棱镜分支职业，选择冰飞镖近战、虚空箭超能和飞升星相。</p></div></li>
-            <li><span>3</span><div><strong>确认首次转向模式</strong><p>{usesAds ? "ADS 转向模式下，二号位武器需选择无礼言论。" : "腰射直投模式下，二号位请使用保持第一人称视角的枪械，不要使用刀剑。"}</p></div></li>
+            <li><span>3</span><div><strong>固定二号位武器</strong><p>{usesAds ? "ADS 转向模式下，二号位需装备无礼言论。" : "腰射直投也建议固定使用无礼言论；不要换用轻质框架、移速异域或刀剑。"}</p></div></li>
             <li><span>4</span><div><strong>同步游戏内设置</strong><p>调整软件设置中的视角灵敏度、视野范围{usesAds ? "和瞄准灵敏度" : ""}，确保与游戏内一致。</p></div></li>
             <li><span>5</span><div><strong>设置切换冲刺</strong><p>确保设置了切换冲刺的按键，游戏内和软件中的冲刺键需为切换冲刺。</p></div></li>
             <li><span>6</span><div><strong>保持角色与准星不动</strong><p>进入游戏后不要移动角色或挪动准星，直接按 <kbd>{formatHotkey(config.hotkeys.start)}</kbd> 启动。</p></div></li>
           </ol>
-          <div className="dialog-note">首次使用还请核对按键映射；WASD 移动键无需设置。</div>
+          <div className="dialog-note">飞升前的移动在切到二号位后执行。固定同一把武器可避免武器框架带来的移动倍率差异；WASD 移动键无需设置。</div>
           <div className="dialog-actions">
             <button className="button secondary" type="button" onClick={openKeysFromGuide}><Icon name="keyboard" />检查按键设置</button>
             <button className="button primary" type="button" onClick={closeGuide}>我已完成准备</button>
@@ -839,28 +933,26 @@ export default function App() {
       )}
 
       {openPanel === "keys" && (
-        <AppDialog title="按键设置" description="修改程序启停热键和游戏内操作映射；改动会自动保存。" onClose={() => setOpenPanel(null)} wide>
+        <AppDialog title="按键设置" description="点击键位框，再按下键盘按键、组合键或鼠标侧键；改动会自动保存。" onClose={() => setOpenPanel(null)} wide>
           {running && <div className="settings-warning" role="status">动作运行期间不能修改按键。请先停止当前流程。</div>}
           <section className="key-section" aria-labelledby="hotkey-settings-title">
             <div className="settings-section-heading">
-              <div><h3 id="hotkey-settings-title">程序热键</h3><p>可组合 Ctrl、Shift、Alt 或 Win；启动与停止不能相同。</p></div>
+              <div><h3 id="hotkey-settings-title">程序热键</h3><p>直接按下主键或 Ctrl、Shift、Alt、Win 组合；也支持鼠标中键和侧键。</p></div>
               <button className="text-button" type="button" onClick={resetKeyBindings} disabled={running} title="仅恢复程序热键和游戏内操作键"><Icon name="reset" />恢复默认键位</button>
             </div>
             <div className="hotkey-grid">
-              <HotkeyField label="启动流程" value={config.hotkeys.start} disabled={running} onChange={(value) => updateHotkey("start", value)} />
-              <HotkeyField label="停止流程" value={config.hotkeys.stop} disabled={running} onChange={(value) => updateHotkey("stop", value)} />
+              <KeyCaptureField label="启动流程" value={config.hotkeys.start} disabled={running} mode="hotkey" onChange={(value) => updateHotkey("start", value)} />
+              <KeyCaptureField label="停止流程" value={config.hotkeys.stop} disabled={running} mode="hotkey" onChange={(value) => updateHotkey("stop", value)} />
             </div>
           </section>
           <section className="key-section" aria-labelledby="game-key-settings-title">
-            <div className="settings-section-heading"><div><h3 id="game-key-settings-title">游戏内操作</h3><p>WASD 固定用于移动；ADS 转向模式固定使用鼠标右键；冲刺键需对应游戏内“切换冲刺”。</p></div></div>
+            <div className="settings-section-heading"><div><h3 id="game-key-settings-title">游戏内操作</h3><p>支持键盘、鼠标中键与两个侧键；WASD 固定移动，ADS 固定鼠标右键。</p></div></div>
             <div className="game-key-grid">
               {gameKeyRows.map(([key, label, fallback]) => (
-                <label className="key-select-row" key={key}>
+                <div className="key-select-row" key={key}>
                   <span><strong>{label}</strong><small>默认 {fallback}</small></span>
-                  <select value={config.gameKeys[key]} disabled={running} onChange={(event) => updateGameKey(key, event.target.value)}>
-                    {gameKeyOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
-                </label>
+                  <KeyCaptureField label={label} value={config.gameKeys[key]} disabled={running} mode="game" onChange={(value) => updateGameKey(key, value)} />
+                </div>
               ))}
             </div>
           </section>

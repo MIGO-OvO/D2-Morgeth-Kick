@@ -3,7 +3,7 @@ use std::{fs, path::PathBuf};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_global_shortcut::Shortcut;
 
-use crate::input;
+use crate::input::{self, InputBinding, MouseButton};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -59,16 +59,63 @@ impl Default for HotkeyConfig {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MouseShortcut {
+    pub button: MouseButton,
+    pub modifiers: u8,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HotkeyBinding {
+    Keyboard(Shortcut),
+    Mouse(MouseShortcut),
+}
+
+impl HotkeyBinding {
+    pub fn keyboard(self) -> Option<Shortcut> {
+        match self {
+            Self::Keyboard(shortcut) => Some(shortcut),
+            Self::Mouse(_) => None,
+        }
+    }
+}
+
+fn parse_hotkey(binding: &str, name: &str) -> Result<HotkeyBinding, String> {
+    let mut parts = binding.split('+').collect::<Vec<_>>();
+    let primary = parts
+        .pop()
+        .filter(|part| !part.is_empty())
+        .ok_or_else(|| format!("{name}热键无效：缺少主键"))?;
+    let mouse_button = match primary {
+        "MouseMiddle" => Some(MouseButton::Middle),
+        "Mouse4" => Some(MouseButton::Back),
+        "Mouse5" => Some(MouseButton::Forward),
+        _ => None,
+    };
+    if let Some(button) = mouse_button {
+        let mut modifiers = 0;
+        for modifier in parts {
+            modifiers |= match modifier.to_ascii_lowercase().as_str() {
+                "control" | "ctrl" => input::MOD_CONTROL,
+                "shift" => input::MOD_SHIFT,
+                "alt" => input::MOD_ALT,
+                "super" | "win" => input::MOD_SUPER,
+                _ => return Err(format!("{name}热键包含不受支持的修饰键：{modifier}")),
+            };
+        }
+        Ok(HotkeyBinding::Mouse(MouseShortcut { button, modifiers }))
+    } else {
+        binding
+            .parse::<Shortcut>()
+            .map(HotkeyBinding::Keyboard)
+            .map_err(|error| format!("{name}热键无效：{error}"))
+    }
+}
+
 impl HotkeyConfig {
-    pub fn shortcuts(&self) -> Result<[Shortcut; 2], String> {
-        let start = self
-            .start
-            .parse::<Shortcut>()
-            .map_err(|error| format!("启动热键无效：{error}"))?;
-        let stop = self
-            .stop
-            .parse::<Shortcut>()
-            .map_err(|error| format!("停止热键无效：{error}"))?;
+    pub fn bindings(&self) -> Result<[HotkeyBinding; 2], String> {
+        let start = parse_hotkey(&self.start, "启动")?;
+        let stop = parse_hotkey(&self.stop, "停止")?;
         if start == stop {
             return Err("启动热键和停止热键不能相同".into());
         }
@@ -106,18 +153,18 @@ impl Default for GameKeyConfig {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AppliedGameKeys {
-    pub sprint: u16,
-    pub jump: u16,
-    pub interact: u16,
-    pub weapon_slot_2: u16,
-    pub melee: u16,
-    pub ascension: u16,
-    pub super_ability: u16,
-    pub finisher: u16,
+    pub sprint: InputBinding,
+    pub jump: InputBinding,
+    pub interact: InputBinding,
+    pub weapon_slot_2: InputBinding,
+    pub melee: InputBinding,
+    pub ascension: InputBinding,
+    pub super_ability: InputBinding,
+    pub finisher: InputBinding,
 }
 
 impl AppliedGameKeys {
-    pub fn all(self) -> [u16; 8] {
+    pub fn all(self) -> [InputBinding; 8] {
         [
             self.sprint,
             self.jump,
@@ -134,7 +181,7 @@ impl AppliedGameKeys {
 impl GameKeyConfig {
     pub fn applied(&self) -> Result<AppliedGameKeys, String> {
         let resolve = |name: &str, binding: &str| {
-            input::scan_code(binding).ok_or_else(|| format!("{name}按键不受支持：{binding}"))
+            input::binding(binding).ok_or_else(|| format!("{name}按键不受支持：{binding}"))
         };
         Ok(AppliedGameKeys {
             sprint: resolve("切换冲刺", &self.sprint)?,
@@ -249,7 +296,7 @@ impl AppConfig {
         if !self.overlay_opacity.is_finite() || !(0.3..=1.0).contains(&self.overlay_opacity) {
             return Err("悬浮窗透明度必须在 30% 到 100% 之间".into());
         }
-        self.hotkeys.shortcuts()?;
+        self.hotkeys.bindings()?;
         self.game_keys.applied()?;
         Ok(())
     }
@@ -433,11 +480,37 @@ mod tests {
     #[test]
     fn default_shortcuts_and_game_keys_are_valid() {
         let config = AppConfig::default();
-        assert!(config.hotkeys.shortcuts().is_ok());
+        assert!(config.hotkeys.bindings().is_ok());
         assert_eq!(
             config.game_keys.applied().unwrap().all(),
-            [0x2a, 0x39, 0x12, 0x03, 0x2e, 0x2d, 0x21, 0x22]
+            [
+                input::binding("ShiftLeft").unwrap(),
+                input::binding("Space").unwrap(),
+                input::binding("KeyE").unwrap(),
+                input::binding("Digit2").unwrap(),
+                input::binding("KeyC").unwrap(),
+                input::binding("KeyX").unwrap(),
+                input::binding("KeyF").unwrap(),
+                input::binding("KeyG").unwrap(),
+            ]
         );
+    }
+
+    #[test]
+    fn mouse_side_buttons_are_valid_hotkeys_and_game_inputs() {
+        let config = AppConfig {
+            hotkeys: HotkeyConfig {
+                start: "Control+Mouse4".into(),
+                stop: "Mouse5".into(),
+            },
+            game_keys: GameKeyConfig {
+                melee: "Mouse4".into(),
+                finisher: "Mouse5".into(),
+                ..GameKeyConfig::default()
+            },
+            ..AppConfig::default()
+        };
+        assert!(config.validate().is_ok());
     }
 
     #[test]

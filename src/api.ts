@@ -165,6 +165,10 @@ export async function stopSequence(): Promise<RuntimeSnapshot> {
   return structuredClone(mockRuntime);
 }
 
+export async function setHotkeyCaptureActive(active: boolean): Promise<void> {
+  if (isTauri()) await invoke("set_hotkey_capture_active", { active });
+}
+
 export async function setOverlayVisible(visible: boolean): Promise<boolean> {
   if (isTauri()) return invoke<boolean>("set_overlay_visible", { visible });
   mockConfig.overlayVisible = visible;
@@ -176,8 +180,8 @@ export async function checkForAppUpdate(): Promise<AppUpdate | null> {
     if (!import.meta.env.DEV || !new URLSearchParams(window.location.search).has("mockUpdate")) return null;
     return {
       available: true,
-      currentVersion: "0.3.1",
-      version: "0.3.2",
+      currentVersion: "0.3.2",
+      version: "0.3.3",
       date: new Date().toISOString(),
       body: "改进更新提醒，并修复长时间运行时的状态同步。",
       rawJson: {},
@@ -188,7 +192,7 @@ export async function checkForAppUpdate(): Promise<AppUpdate | null> {
 }
 
 export async function getAppVersion(): Promise<string> {
-  return isTauri() ? getVersion() : "0.3.1";
+  return isTauri() ? getVersion() : "0.3.2";
 }
 
 export async function installAppUpdate(

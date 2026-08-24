@@ -7,7 +7,7 @@ use tauri::AppHandle;
 
 use crate::{
     config::{AppConfig, AppliedGameKeys, FirstAimMode},
-    input::{self, KEY_A, KEY_D, KEY_S, KEY_W},
+    input::{self, InputBinding, KEY_A, KEY_D, KEY_S, KEY_W},
     runtime::AppState,
 };
 
@@ -62,15 +62,15 @@ fn wait_until(state: &AppState, start: Instant, seconds: f64) -> SequenceResult 
     }
 }
 
-fn key(state: &AppState, scan_code: u16, down: bool) -> SequenceResult {
+fn key(state: &AppState, binding: InputBinding, down: bool) -> SequenceResult {
     check_cancel(state)?;
-    input::key(scan_code, down).map_err(SequenceError::Input)
+    input::set(binding, down).map_err(SequenceError::Input)
 }
 
-fn tap(state: &AppState, scan_code: u16, hold_ms: u64) -> SequenceResult {
-    key(state, scan_code, true)?;
+fn tap(state: &AppState, binding: InputBinding, hold_ms: u64) -> SequenceResult {
+    key(state, binding, true)?;
     wait(state, Duration::from_millis(hold_ms))?;
-    key(state, scan_code, false)
+    key(state, binding, false)
 }
 
 fn right_mouse(state: &AppState, down: bool) -> SequenceResult {

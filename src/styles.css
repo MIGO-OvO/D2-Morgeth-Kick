@@ -266,6 +266,9 @@ main { max-width: 1500px; margin: 0 auto; padding: 18px clamp(18px, 2vw, 28px) 2
 .footer-actions .icon { width: 14px; height: 14px; }
 .footer-actions .check-update-button { gap: 5px; }
 .check-update-button small { padding-left: 2px; color: var(--metadata); font-family: var(--font-mono); font-size: 9px; font-weight: 500; }
+.footer-meta { display: flex; align-items: center; gap: 14px; flex: none; }
+.feedback-channel { color: var(--text-muted); font-size: 10px; white-space: nowrap; }
+.feedback-channel strong { margin-left: 3px; color: var(--text-soft); font-family: var(--font-mono); font-weight: 650; }
 .save-indicator { display: flex; align-items: center; gap: 6px; flex: none; color: var(--text-muted); font-size: 10px; }
 .save-indicator > span { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
 .save-indicator.saving > span { background: var(--amber); }
@@ -298,21 +301,26 @@ main { max-width: 1500px; margin: 0 auto; padding: 18px clamp(18px, 2vw, 28px) 2
 .text-button:disabled { opacity: .45; cursor: not-allowed; }
 .text-button .icon { width: 13px; height: 13px; }
 .hotkey-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.hotkey-field { min-width: 0; margin: 0; padding: 11px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
-.hotkey-field legend { padding: 0 5px; color: var(--text); font-size: 12px; font-weight: 700; }
-.modifier-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 8px; }
-.modifier-row label { min-width: 0; cursor: pointer; }
-.modifier-row input { position: absolute; opacity: 0; pointer-events: none; }
-.modifier-row span { min-height: 28px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 5px; background: var(--surface-subtle); color: var(--text-muted); font-size: 10px; }
-.modifier-row input:checked + span { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); font-weight: 700; }
-.modifier-row input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 2px; }
-.hotkey-field select, .key-select-row select { width: 100%; min-height: 34px; padding: 0 30px 0 9px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--control); color: var(--text); font-size: 12px; }
-.hotkey-field:disabled, .key-select-row select:disabled { opacity: .55; }
+.key-capture-field { min-width: 0; display: grid; gap: 6px; }
+.hotkey-grid .key-capture-field { padding: 11px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.key-capture-label { color: var(--text); font-size: 12px; font-weight: 700; }
+.key-capture-button { min-width: 0; min-height: 48px; display: grid; justify-items: start; align-content: center; gap: 4px; padding: 7px 9px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--control); color: var(--text); text-align: left; cursor: pointer; transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease; }
+.key-capture-button:hover:not(:disabled) { border-color: var(--blue); background: var(--surface-subtle); }
+.key-capture-button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.key-capture-button:disabled { opacity: .55; cursor: not-allowed; }
+.key-capture-button kbd { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.key-capture-button small { overflow: hidden; color: var(--text-muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.key-capture-field.recording .key-capture-button { border-color: var(--blue); background: var(--blue-soft); box-shadow: 0 0 0 1px var(--blue); }
+.key-capture-field.recording .key-capture-button kbd { border-color: var(--blue); color: var(--blue); }
+.key-capture-field.invalid .key-capture-button { border-color: var(--line-danger); }
+.key-capture-error { color: var(--text-danger); font-size: 9px; line-height: 1.35; }
 .game-key-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; }
-.key-select-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 116px; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.key-select-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 148px; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
 .key-select-row > span { display: grid; gap: 2px; }
 .key-select-row strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .key-select-row small { color: var(--text-muted); font-size: 10px; }
+.key-select-row .key-capture-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; clip-path: inset(50%); }
+.key-select-row .key-capture-button { min-height: 42px; }
 
 .overlay-shell { width: 100%; height: 100%; display: grid; grid-template-columns: 100px minmax(72px, 1fr) 112px; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid rgba(148,160,178,.46); border-radius: 10px; background: rgba(19,24,31,.97); background-clip: padding-box; color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.06), inset 0 -1px 0 rgba(0,0,0,.28); overflow: clip; isolation: isolate; }
 .overlay-status { display: flex; align-items: center; gap: 7px; min-width: 0; }
@@ -357,6 +365,7 @@ main { max-width: 1500px; margin: 0 auto; padding: 18px clamp(18px, 2vw, 28px) 2
   main { padding: 12px; }
   .app-footer { min-height: 64px; align-items: flex-start; padding: 8px 12px; }
   .footer-actions { align-self: center; }
+  .footer-meta { align-self: center; }
   .update-banner { grid-template-columns: 36px minmax(0, 1fr); margin-right: 12px; margin-left: 12px; }
   .update-actions { grid-column: 2; justify-content: flex-start; }
 }
@@ -372,6 +381,7 @@ main { max-width: 1500px; margin: 0 auto; padding: 18px clamp(18px, 2vw, 28px) 2
   .workspace-tabs button { font-size: 11px; }
   .game-settings-grid, .pair-fields, .timing-list { grid-template-columns: 1fr; }
   .save-indicator { display: none; }
+  .feedback-channel { font-size: 9px; }
   .update-banner { align-items: start; }
   .update-copy > span { white-space: normal; }
   .update-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
