@@ -225,7 +225,7 @@ The palette is cool and neutral, with Action Blue reserved for operation and sel
 
 ## Layout
 
-The desktop application uses a draggable custom command title bar and a three-column calibration workspace with the aiming column given slightly more room. The title bar keeps runtime status, resolution, Overlay visibility and opacity, actions, and familiar Windows window controls together. A fixed footer keeps immutable keys and save state visible. At narrower widths the workspace becomes a three-tab, single-panel view, lower-priority title-bar metadata collapses, and paired fields stack on small screens.
+The desktop application uses a draggable custom command title bar and a fixed 1180 x 760 two-level calibration workspace. Display and sensitivity occupies the upper-left panel, aiming adjustment uses the wider upper-right panel, and action timing spans the full lower row. The title bar keeps runtime status, resolution, Overlay visibility and opacity, actions, and the minimize/close controls together. A fixed footer keeps help, immutable keys, version, reset, and save state visible. The native window does not resize, maximize, or zoom, preserving the intended density and preventing partial panels.
 
 The portal opens as a split stage with concise copy beside a large console preview, then moves through the sequence, calibration ledger, safety boundary, and download close. It stacks to one column on compact viewports, preserves usable control heights, reduces the preview before removing proof, and converts long rails and ledgers into smaller responsive groupings.
 
@@ -274,8 +274,8 @@ Components feel precise, restrained, and sized for an unmistakable click or tap 
 
 ### Navigation
 
-- **Desktop:** The three calibration panels remain simultaneously visible when space permits.
-- **Compact:** A segmented three-tab workspace reveals one panel at a time with pressed state and icon redundancy.
+- **Desktop:** The fixed two-level workspace keeps all three calibration groups visible without page scrolling.
+- **Guide:** The usage guide uses larger readable type and five keyboard-accessible pages with previous/next navigation.
 - **Portal:** Plain text links stay secondary to the download action and disappear cleanly on mobile.
 
 ### Overlay Safety Instrument

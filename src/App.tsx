@@ -26,7 +26,6 @@ import {
   setOverlayVisible,
   startSequence,
   stopSequence,
-  toggleMaximizeWindow,
   type AppUpdate,
   type AppUpdateDownloadEvent,
 } from "./api";
@@ -119,7 +118,7 @@ const statusLabels: Record<RuntimeStatus, string> = {
   error: "发生错误",
 };
 
-function Icon({ name }: { name: "play" | "stop" | "display" | "target" | "clock" | "refresh" | "sun" | "moon" | "help" | "keyboard" | "close" | "reset" | "minimize" | "maximize" }) {
+function Icon({ name }: { name: "play" | "stop" | "display" | "target" | "clock" | "refresh" | "sun" | "moon" | "help" | "keyboard" | "close" | "reset" | "minimize" }) {
   const paths: Record<typeof name, ReactNode> = {
     play: <path d="m9 7 8 5-8 5V7Z" />,
     stop: <path d="M8 8h8v8H8z" />,
@@ -134,7 +133,6 @@ function Icon({ name }: { name: "play" | "stop" | "display" | "target" | "clock"
     close: <path d="m7 7 10 10M17 7 7 17" />,
     reset: <><path d="M4 4v6h6" /><path d="M5.5 15a7 7 0 1 0 .2-8.2L4 10" /></>,
     minimize: <path d="M6 16h12" />,
-    maximize: <rect x="6.5" y="6.5" width="11" height="11" rx=".5" />,
   };
   return <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>;
 }
@@ -173,6 +171,133 @@ function AppDialog({ title, description, onClose, children, wide = false }: AppD
       </div>
       {children}
     </dialog>
+  );
+}
+
+interface UsageGuideProps {
+  usesAds: boolean;
+  startHotkey: string;
+  onClose: () => void;
+  onOpenKeys: () => void;
+}
+
+function UsageGuide({ usesAds, startHotkey, onClose, onOpenKeys }: UsageGuideProps) {
+  const [page, setPage] = useState(0);
+  const pages = [
+    {
+      eyebrow: "准备 01",
+      title: "游戏内设置",
+      description: "先让游戏配置与软件参数保持一致。",
+      content: (
+        <ul className="guide-checklist">
+          <li><span>1</span><div><strong>同步灵敏度</strong><p>软件中的视角灵敏度、瞄准灵敏度和 FOV 必须与游戏内一致。</p></div></li>
+          <li><span>2</span><div><strong>选择棱镜配置</strong><p>近战选择冰飞镖，星相选择飞升和分身。</p></div></li>
+          <li><span>3</span><div><strong>核对近战属性</strong><p>近战属性推荐叠至 140 左右。</p></div></li>
+          <li><span>4</span><div><strong>设置切换冲刺</strong><p>游戏内与软件中的切换冲刺按键需要保持一致。</p></div></li>
+          <li><span>5</span><div><strong>装备运动强化模组</strong><p>腿部护甲推荐装备 3 个运动强化模组。</p></div></li>
+        </ul>
+      ),
+    },
+    {
+      eyebrow: "执行 02",
+      title: "选择执行方式",
+      description: "根据二号位武器选择对应模式。",
+      content: (
+        <div className="guide-mode-list">
+          <section className={usesAds ? "current" : ""}>
+            <span>01</span>
+            <div><strong>无礼言论</strong><p>必须装备“无礼言论”，程序使用开镜瞄准完成首次转向。</p></div>
+            {usesAds && <small>当前模式</small>}
+          </section>
+          <section className={!usesAds ? "current" : ""}>
+            <span>02</span>
+            <div><strong>通用配枪</strong><p>使用腰射视角，可选择刀剑和轻质框架以外的枪械。</p></div>
+            {!usesAds && <small>当前模式</small>}
+          </section>
+          <div className="guide-callout"><strong>启动前保持不动</strong><p>进入游戏后不要移动人物或鼠标，直接按 <kbd>{startHotkey}</kbd> 启动程序。</p></div>
+        </div>
+      ),
+    },
+    {
+      eyebrow: "校准 03",
+      title: "瞄点与动作时序",
+      description: "默认参数不合适时，再进行小幅调整。",
+      content: (
+        <div className="guide-feature-list">
+          <section>
+            <span>XY</span>
+            <div><strong>瞄点微调</strong><p>输入 X、Y 偏移量，可修正近战技能、虚空箭和终结时的瞄准点。</p><small>X 向左为负、向右为正；Y 向上为负、向下为正。</small></div>
+          </section>
+          <section>
+            <span>秒</span>
+            <div><strong>动作时序</strong><p>当近战、超能或终结时机过早、过晚时，调整对应动作之间的等待时间。</p><small>每次只改一个参数，并用小幅度变化验证结果。</small></div>
+          </section>
+        </div>
+      ),
+    },
+    {
+      eyebrow: "排查 04",
+      title: "常见问题",
+      description: "按现象快速核对设置与执行时机。",
+      content: (
+        <dl className="guide-faq">
+          <div><dt>人物没跑到位置就停</dt><dd>确认游戏内已设置“切换冲刺”，并与软件按键映射一致。</dd></div>
+          <div><dt>虚空箭或冰飞镖偏得很远</dt><dd>确认软件与游戏的灵敏度一致，并检查执行方式是否与二号位武器匹配。</dd></div>
+          <div><dt>无法终结或 BOSS 跺脚</dt><dd>微调近战、超能间隔和虚空箭落点，使飞镖与冲刺终结落在正确时机。</dd></div>
+        </dl>
+      ),
+    },
+    {
+      eyebrow: "确认 05",
+      title: "安全与使用边界",
+      description: "开始前确认项目来源与适用条款。",
+      content: (
+        <div className="guide-final">
+          <div className="guide-final-mark"><Icon name="help" /></div>
+          <strong>代码公开，风险自查</strong>
+          <p>本项目代码完全开源，可通过源码与发布文件自行核对。使用本工具前，请确认适用的游戏条款，并自行承担使用风险。</p>
+          <small>运行期间可随时按停止热键中止，程序会释放已按下的操作键。</small>
+        </div>
+      ),
+    },
+  ];
+  const activePage = pages[page];
+  const lastPage = page === pages.length - 1;
+
+  useEffect(() => {
+    const handleGuideKey = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") setPage((current) => Math.max(0, current - 1));
+      if (event.key === "ArrowRight") setPage((current) => Math.min(pages.length - 1, current + 1));
+    };
+    window.addEventListener("keydown", handleGuideKey);
+    return () => window.removeEventListener("keydown", handleGuideKey);
+  }, [pages.length]);
+
+  return (
+    <AppDialog title="使用说明" description="使用左右方向键或下方按钮翻页。" onClose={onClose} wide>
+      <div className="guide-progress" aria-label={`使用说明，第 ${page + 1} 页，共 ${pages.length} 页`}>
+        <span>{page + 1} / {pages.length}</span>
+        <div>
+          {pages.map((item, index) => (
+            <button key={item.title} type="button" className={index === page ? "active" : ""} onClick={() => setPage(index)} aria-label={`第 ${index + 1} 页：${item.title}`} aria-current={index === page ? "step" : undefined} />
+          ))}
+        </div>
+      </div>
+      <section className="guide-page" aria-live="polite" aria-labelledby="guide-page-title">
+        <header><span>{activePage.eyebrow}</span><h3 id="guide-page-title">{activePage.title}</h3><p>{activePage.description}</p></header>
+        {activePage.content}
+      </section>
+      <div className="guide-actions">
+        <button className="text-button" type="button" onClick={onOpenKeys}><Icon name="keyboard" />检查按键设置</button>
+        <span>也可使用键盘 ← → 翻页</span>
+        <div>
+          <button className="button secondary" type="button" onClick={() => setPage((current) => Math.max(0, current - 1))} disabled={page === 0}>上一页</button>
+          {lastPage
+            ? <button className="button primary" type="button" onClick={onClose}>我已了解并关闭</button>
+            : <button className="button primary" type="button" onClick={() => setPage((current) => Math.min(pages.length - 1, current + 1))}>下一页</button>}
+        </div>
+      </div>
+    </AppDialog>
   );
 }
 
@@ -381,7 +506,7 @@ export default function App() {
   const [selectedVector, setSelectedVector] = useState<"first" | "void" | "sprint">("void");
   const [theme, setTheme] = useState<Theme>(resolveTheme);
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
-  const [appVersion, setAppVersion] = useState("0.3.2");
+  const [appVersion, setAppVersion] = useState("0.3.3");
   const [updateNotice, setUpdateNotice] = useState<UpdateNotice>({ phase: "idle" });
   const readyRef = useRef(false);
   const pendingUpdateRef = useRef<AppUpdate | null>(null);
@@ -675,13 +800,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header
-        className="command-header"
-        data-tauri-drag-region
-        onDoubleClick={(event) => {
-          if (!(event.target as HTMLElement).closest("button, input, label")) void toggleMaximizeWindow();
-        }}
-      >
+      <header className="command-header" data-tauri-drag-region>
         <div className="brand-block" data-tauri-drag-region>
           <img className="brand-mark" src={morgethLogo} alt="" aria-hidden="true" />
           <div>
@@ -735,7 +854,6 @@ export default function App() {
           </button>
           <div className="window-controls" aria-label="窗口控制">
             <button type="button" onClick={() => void minimizeWindow()} aria-label="最小化" title="最小化"><Icon name="minimize" /></button>
-            <button type="button" onClick={() => void toggleMaximizeWindow()} aria-label="最大化或还原" title="最大化或还原"><Icon name="maximize" /></button>
             <button className="window-close" type="button" onClick={() => void closeWindow()} aria-label="关闭" title="关闭"><Icon name="close" /></button>
           </div>
         </div>
@@ -784,7 +902,7 @@ export default function App() {
         <nav className="workspace-tabs" aria-label="校准分组">
           {([
             ["display", "显示与灵敏度", "display"],
-            ["aim", "瞄准偏移", "target"],
+            ["aim", "瞄点调整", "target"],
             ["timing", "动作时序", "clock"],
           ] as const).map(([id, label, icon]) => (
             <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)} aria-pressed={tab === id}>
@@ -794,19 +912,21 @@ export default function App() {
         </nav>
 
         <div className="calibration-grid">
-          <section className={`calibration-column ${tab === "display" ? "mobile-active" : ""}`} aria-labelledby="display-title">
+          <section className={`calibration-column display-column ${tab === "display" ? "mobile-active" : ""}`} aria-labelledby="display-title">
             <div className="column-heading">
               <span className="column-icon"><Icon name="display" /></span>
               <div><h2 id="display-title">显示与灵敏度</h2><p>确认游戏画面尺寸，再换算鼠标移动量。</p></div>
             </div>
             <div className="segment-control" role="group" aria-label="分辨率来源">
               <button type="button" className={config.resolutionMode === "auto" ? "active" : ""} aria-pressed={config.resolutionMode === "auto"} onClick={() => updateConfig("resolutionMode", "auto")}>自动识别</button>
-              <button type="button" className={config.resolutionMode === "manual" ? "active" : ""} aria-pressed={config.resolutionMode === "manual"} onClick={() => updateConfig("resolutionMode", "manual")}>手动指定</button>
+              <button type="button" className={config.resolutionMode === "manual" ? "active" : ""} aria-pressed={config.resolutionMode === "manual"} onClick={() => updateConfig("resolutionMode", "manual")}>手动设置</button>
             </div>
-            <div className="resolution-result">
-              <div><span>{config.resolutionMode === "auto" && resolution?.detectedGame ? "已识别 Destiny 2 客户区" : "当前动作分辨率"}</span><strong>{currentResolution}</strong></div>
-              <button className="icon-button" onClick={refreshResolution} aria-label="重新检测分辨率" title="重新检测"><Icon name="refresh" /></button>
-            </div>
+            {config.resolutionMode === "auto" && (
+              <div className="resolution-result">
+                <div><span>{resolution?.detectedGame ? "已识别 Destiny 2 客户区" : "当前动作分辨率"}</span><strong>{currentResolution}</strong></div>
+                <button className="icon-button" onClick={refreshResolution} aria-label="重新检测分辨率" title="重新检测"><Icon name="refresh" /></button>
+              </div>
+            )}
             {config.resolutionMode === "manual" && (
               <div className="pair-fields">
                 <NumberField label="宽度" value={config.manualWidth} min={640} max={7680} onChange={(value) => updateConfig("manualWidth", value)} unit="px" />
@@ -826,54 +946,66 @@ export default function App() {
             <p className="info-note">按 15 / 1.00 的参考灵敏度换算相对鼠标计数。FOV 仅用于设置核对，不改变固定世界方向所需的转向量。</p>
           </section>
 
-          <section className={`calibration-column ${tab === "aim" ? "mobile-active" : ""}`} aria-labelledby="aim-title">
+          <section className={`calibration-column aim-column ${tab === "aim" ? "mobile-active" : ""}`} aria-labelledby="aim-title">
             <div className="column-heading">
               <span className="column-icon"><Icon name="target" /></span>
-              <div><h2 id="aim-title">瞄准偏移</h2><p>选择首次转向方式，再修正后续落点。</p></div>
+              <div>
+                <div className="heading-title-row">
+                  <h2 id="aim-title">瞄点调整</h2>
+                  <button className="xy-help" type="button" aria-describedby="xy-help-tooltip">
+                    XY 说明
+                    <span id="xy-help-tooltip" role="tooltip">X 正值向右、负值向左；Y 正值向下、负值向上。Y 轴采用屏幕坐标，与数学直角坐标系方向相反。</span>
+                  </button>
+                </div>
+                <p>选择首次转向方式，再修正后续落点。</p>
+              </div>
             </div>
-            <div className="segment-control aim-mode-control" role="group" aria-label="首次转向模式">
-              <button type="button" className={usesAds ? "active" : ""} aria-pressed={usesAds} onClick={() => updateConfig("firstAimMode", "ads")}>ADS 转向</button>
-              <button type="button" className={!usesAds ? "active" : ""} aria-pressed={!usesAds} onClick={() => updateConfig("firstAimMode", "hipfire")}>腰射直投</button>
+            <div className="aim-mode-panel">
+              <div className="segment-control aim-mode-control" role="group" aria-label="首次转向模式">
+                <button type="button" className={usesAds ? "active" : ""} aria-pressed={usesAds} onClick={() => updateConfig("firstAimMode", "ads")}>无礼言论</button>
+                <button type="button" className={!usesAds ? "active" : ""} aria-pressed={!usesAds} onClick={() => updateConfig("firstAimMode", "hipfire")}>通用配枪</button>
+              </div>
+              <p className="mode-note">{usesAds
+                ? "按住右键完成首次转向；需要无礼言论的 20 Zoom 作为校准基准。"
+                : "全程腰射完成首次转向并直接近战；使用普通视角灵敏度换算。"}</p>
             </div>
-            <p className="mode-note">{usesAds
-              ? "按住右键完成首次转向；需要无礼言论的 20 Zoom 作为校准基准。"
-              : "全程腰射完成首次转向并直接近战；使用普通视角灵敏度换算。"}</p>
-            <p className="axis-note" role="note">
-              <strong>坐标方向：</strong>X 正值向右、负值向左；Y 正值向下、负值向上。Y 轴采用屏幕坐标，与数学直角坐标系方向相反。
-            </p>
-            <AimPreview label={selectedPreview.label} value={selectedPreview.value} />
-            <VectorEditor
-              title={firstAimLabel}
-              description={usesAds ? "按住右键时的近战前转向" : "腰射状态下转向后直接近战"}
-              base={usesAds ? config.firstAdsBase : config.firstHipBase}
-              applied={usesAds ? applied.firstAds : applied.firstHip}
-              onBaseChange={(value) => updateConfig(usesAds ? "firstAdsBase" : "firstHipBase", value)}
-              selected={selectedVector === "first"}
-              onSelect={() => setSelectedVector("first")}
-            />
-            <VectorEditor
-              title="虚空箭落点"
-              description="在参考落点上进行像素级微调"
-              base={config.voidArrowBase}
-              trim={config.voidArrowTrim}
-              applied={applied.voidArrow}
-              onTrimChange={(value) => updateConfig("voidArrowTrim", value)}
-              selected={selectedVector === "void"}
-              onSelect={() => setSelectedVector("void")}
-            />
-            <VectorEditor
-              title="冲刺朝向"
-              description="终结前冲刺过程中的镜头修正"
-              base={config.sprintBase}
-              trim={config.sprintTrim}
-              applied={applied.sprint}
-              onTrimChange={(value) => updateConfig("sprintTrim", value)}
-              selected={selectedVector === "sprint"}
-              onSelect={() => setSelectedVector("sprint")}
-            />
+            <div className="aim-editor-grid">
+              <div className="aim-context">
+                <AimPreview label={selectedPreview.label} value={selectedPreview.value} />
+              </div>
+              <VectorEditor
+                title={firstAimLabel}
+                description={usesAds ? "按住右键时的近战前转向" : "腰射状态下转向后直接近战"}
+                base={usesAds ? config.firstAdsBase : config.firstHipBase}
+                applied={usesAds ? applied.firstAds : applied.firstHip}
+                onBaseChange={(value) => updateConfig(usesAds ? "firstAdsBase" : "firstHipBase", value)}
+                selected={selectedVector === "first"}
+                onSelect={() => setSelectedVector("first")}
+              />
+              <VectorEditor
+                title="虚空箭落点"
+                description="在参考落点上进行像素级微调"
+                base={config.voidArrowBase}
+                trim={config.voidArrowTrim}
+                applied={applied.voidArrow}
+                onTrimChange={(value) => updateConfig("voidArrowTrim", value)}
+                selected={selectedVector === "void"}
+                onSelect={() => setSelectedVector("void")}
+              />
+              <VectorEditor
+                title="冲刺朝向"
+                description="终结前冲刺过程中的镜头修正"
+                base={config.sprintBase}
+                trim={config.sprintTrim}
+                applied={applied.sprint}
+                onTrimChange={(value) => updateConfig("sprintTrim", value)}
+                selected={selectedVector === "sprint"}
+                onSelect={() => setSelectedVector("sprint")}
+              />
+            </div>
           </section>
 
-          <section className={`calibration-column ${tab === "timing" ? "mobile-active" : ""}`} aria-labelledby="timing-title">
+          <section className={`calibration-column timing-column ${tab === "timing" ? "mobile-active" : ""}`} aria-labelledby="timing-title">
             <div className="column-heading">
               <span className="column-icon"><Icon name="clock" /></span>
               <div><h2 id="timing-title">动作时序</h2><p>调整每段等待，{formatHotkey(config.hotkeys.stop)} 随时可停。</p></div>
@@ -885,10 +1017,6 @@ export default function App() {
               <NumberField label="超能后等待" value={config.timings.superWait} min={0} max={10} step={0.05} unit="秒" onChange={(value) => updateTiming("superWait", value)} hint={`${formatKey(config.gameKeys.superAbility)} 释放后至冲刺`} />
               <NumberField label="冲刺侧移时间" value={config.timings.sprintATime} min={0} max={3} step={0.01} unit="秒" onChange={(value) => updateTiming("sprintATime", value)} hint="A 先行按下时长" />
               <NumberField label="冲刺至终结" value={config.timings.sprintToFinisher} min={0} max={5} step={0.05} unit="秒" onChange={(value) => updateTiming("sprintToFinisher", value)} hint="镜头微调后附加" />
-            </div>
-            <div className="safety-card">
-              <div className="safety-icon"><Icon name="stop" /></div>
-              <div><strong>全程可安全中止</strong><p>按 {formatHotkey(config.hotkeys.stop)} 后，程序会在当前短步骤结束前停止，并释放移动键、已映射操作键与鼠标右键。</p></div>
             </div>
           </section>
         </div>
@@ -915,21 +1043,7 @@ export default function App() {
       </footer>
 
       {openPanel === "guide" && (
-        <AppDialog title="开始前请确认" description="完成以下准备后，回到游戏直接按启动热键。" onClose={closeGuide}>
-          <ol className="usage-steps">
-            <li><span>1</span><div><strong>装备运动强化模组</strong><p>腿部护甲装备 3 个运动强化模组，近战属性推荐叠到 140。</p></div></li>
-            <li><span>2</span><div><strong>使用指定棱镜配置</strong><p>装备棱镜分支职业，选择冰飞镖近战、虚空箭超能和飞升星相。</p></div></li>
-            <li><span>3</span><div><strong>固定二号位武器</strong><p>{usesAds ? "ADS 转向模式下，二号位需装备无礼言论。" : "腰射直投也建议固定使用无礼言论；不要换用轻质框架、移速异域或刀剑。"}</p></div></li>
-            <li><span>4</span><div><strong>同步游戏内设置</strong><p>调整软件设置中的视角灵敏度、视野范围{usesAds ? "和瞄准灵敏度" : ""}，确保与游戏内一致。</p></div></li>
-            <li><span>5</span><div><strong>设置切换冲刺</strong><p>确保设置了切换冲刺的按键，游戏内和软件中的冲刺键需为切换冲刺。</p></div></li>
-            <li><span>6</span><div><strong>保持角色与准星不动</strong><p>进入游戏后不要移动角色或挪动准星，直接按 <kbd>{formatHotkey(config.hotkeys.start)}</kbd> 启动。</p></div></li>
-          </ol>
-          <div className="dialog-note">飞升前的移动在切到二号位后执行。固定同一把武器可避免武器框架带来的移动倍率差异；WASD 移动键无需设置。</div>
-          <div className="dialog-actions">
-            <button className="button secondary" type="button" onClick={openKeysFromGuide}><Icon name="keyboard" />检查按键设置</button>
-            <button className="button primary" type="button" onClick={closeGuide}>我已完成准备</button>
-          </div>
-        </AppDialog>
+        <UsageGuide usesAds={usesAds} startHotkey={formatHotkey(config.hotkeys.start)} onClose={closeGuide} onOpenKeys={openKeysFromGuide} />
       )}
 
       {openPanel === "keys" && (

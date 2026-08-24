@@ -48,7 +48,7 @@
         <p class="hero-intro">项目基于D2-Ogre-Kick重构而来。底层架构完全重构，程序更小巧；GUI 多参数可调，多分辨率适配。</p>
         <p class="download-label">选择下载渠道</p>
         <div class="hero-actions" aria-label="下载渠道">
-          <a class="button primary" id="download-link" href="https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.2-Windows-x64-setup.exe">
+          <a class="button primary" id="download-link" href="https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.3-Windows-x64-setup.exe">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 20h14" /></svg>
             GitHub 下载
           </a>
@@ -58,7 +58,7 @@
           </a>
           <a class="button source" href="https://github.com/MIGO-OvO/D2-Morgeth-Kick" target="_blank" rel="noreferrer">查看源码</a>
         </div>
-        <p class="release-note"><span class="status-dot" aria-hidden="true"></span><span id="release-version">v0.3.2</span><span>64 位 Windows 10 / 11</span><span>反馈QQ群：1104108070</span></p>
+        <p class="release-note"><span class="status-dot" aria-hidden="true"></span><span id="release-version">v0.3.3</span><span>64 位 Windows 10 / 11</span><span>反馈QQ群：1104108070</span></p>
       </section>
 
       <section class="app-showcase" id="app" aria-labelledby="app-title">
@@ -67,7 +67,7 @@
             <p class="section-index">01 / 程序界面</p>
             <h2 id="app-title">参数可调、流程清晰</h2>
           </div>
-          <p>主窗口完整显示分辨率、灵敏度、瞄准偏移和动作时序。改值时能立即看到应用结果，不必编辑配置文件。</p>
+          <p>主窗口完整显示分辨率、灵敏度、瞄点调整和动作时序。改值时能立即看到应用结果，不必编辑配置文件。</p>
         </div>
 
         <div class="console-stage" aria-label="D2 Morgeth Kick 应用界面预览">
@@ -102,7 +102,7 @@
               <div class="console-columns">
                 <section class="console-panel">
                   <div class="panel-heading"><div><h3>显示与灵敏度</h3><p>确认游戏画布，再换算鼠标移动量。</p></div></div>
-                  <div class="segmented"><b>自动识别</b><span>手动指定</span></div>
+                  <div class="segmented"><b>自动识别</b><span>手动设置</span></div>
                   <div class="resolution-card"><small>已识别 Destiny 2 客户区</small><strong>1920 × 1080</strong></div>
                   <h4>游戏内设置 <small>参考 15 / 1.00 / 100°</small></h4>
                   <div class="field-grid settings-fields"><label>视角灵敏度<b>15</b></label><label>瞄准灵敏度<b>1.00</b></label><label>视野范围 (FOV)<b>100°</b></label></div>
@@ -110,19 +110,19 @@
                 </section>
 
                 <section class="console-panel aiming-panel">
-                  <div class="panel-heading"><div><h3>瞄准偏移</h3><p>修正虚空箭落点与冲刺朝向。</p></div></div>
-                  <div class="vector-card"><span>虚空箭</span><b>X -300 · Y 81</b><i></i></div>
-                  <div class="offset-card selected"><span><strong>首次转向</strong><small>支持 ADS 与腰射直投模式</small></span><b>-1300, 25</b><div class="field-grid"><label>X 基准<em>-1300</em></label><label>Y 基准<em>25</em></label></div></div>
-                  <div class="offset-card"><span><strong>虚空箭落点</strong><small>在参考落点上微调</small></span><b>-300, 81</b><div class="field-grid"><label>X 微调<em>0</em></label><label>Y 微调<em>0</em></label></div></div>
+                  <div class="panel-heading"><div><h3>瞄点调整</h3><p>修正虚空箭落点与冲刺朝向。</p></div></div>
+                  <div class="vector-card"><span>虚空箭</span><b>X -350 · Y 81</b><i></i></div>
+                  <div class="offset-card selected"><span><strong>首次转向</strong><small>支持无礼言论与通用配枪模式</small></span><b>-1320, 30</b><div class="field-grid"><label>X 基准<em>-1320</em></label><label>Y 基准<em>30</em></label></div></div>
+                  <div class="offset-card"><span><strong>虚空箭落点</strong><small>在参考落点上微调</small></span><b>-350, 81</b><div class="field-grid"><label>X 微调<em>-50</em></label><label>Y 微调<em>0</em></label></div></div>
                 </section>
 
                 <section class="console-panel">
                   <div class="panel-heading"><div><h3>动作时序</h3><p>调整每段等待，F10 随时可停。</p></div></div>
                   <div class="timing-grid">
-                    <label>飞升后等待<b>1.6 <small>秒</small></b><span>X 飞升至后退定位</span></label>
-                    <label>近战额外等待<b>0.5 <small>秒</small></b><span>首次转向到 C 近战追加</span></label>
+                    <label>飞升后等待<b>1.5 <small>秒</small></b><span>X 飞升至后退定位</span></label>
+                    <label>近战额外等待<b>0.3 <small>秒</small></b><span>首次转向到 C 近战追加</span></label>
                     <label>首次转向至超能<b>2.5 <small>秒</small></b><span>从首次转向阶段计算</span></label>
-                    <label>超能后等待<b>1.8 <small>秒</small></b><span>F 释放后至冲刺</span></label>
+                    <label>超能后等待<b>1.9 <small>秒</small></b><span>F 释放后至冲刺</span></label>
                     <label>冲刺侧移时间<b>0.1 <small>秒</small></b><span>A 先行按下时长</span></label>
                     <label>冲刺至终结<b>0.0 <small>秒</small></b><span>镜头微调后附加</span></label>
                   </div>

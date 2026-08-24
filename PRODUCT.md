@@ -38,7 +38,7 @@ The product turns a hard-coded replay script into an inspectable timing instrume
 - The operator can switch between weapon-dependent ADS turning and direct hip-fire turning. Each mode keeps an independent first-turn calibration, while void-arrow landing point, sprint direction, timing, look sensitivity, and ADS modifier remain adjustable.
 - Every wait and mouse-movement step must be cancellable. Abort, error, and application exit must release held inputs.
 - The overlay is read-only, click-through, and synchronized through Tauri events. It is process-bound to `destiny2.exe`, appears only while the game is foreground, follows the upper-center of the game client area, and supports configurable opacity.
-- The main window uses a custom title bar with familiar Windows minimize, maximize/restore, close, drag, and double-click behavior.
+- The main window uses a custom title bar with familiar Windows minimize, close, and drag behavior. It is fixed at 1180 x 760 and does not allow resizing, maximizing, or page zoom so the calibrated layout remains stable.
 - The main interface and public portal must support light and dark color schemes.
 - Boss or player state recognition, kill confirmation, automatic loops, map interaction, and loot collection are not part of this release.
 - The first public package targets 64-bit Windows and is released under the MIT License.

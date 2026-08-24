@@ -20,18 +20,18 @@ export const defaultConfig: AppConfig = {
   referenceLookSensitivity: 15,
   referenceAdsModifier: 1,
   referenceFieldOfView: 100,
-  firstAimMode: "ads",
+  firstAimMode: "hipfire",
   firstAdsBase: [-2600, 50],
-  firstHipBase: [-1300, 25],
+  firstHipBase: [-1320, 30],
   voidArrowBase: [-300, 81],
-  voidArrowTrim: [0, 0],
+  voidArrowTrim: [-50, 0],
   sprintBase: [280, 0],
   sprintTrim: [0, 0],
   timings: {
-    ascensionWait: 1.6,
-    meleeExtraWait: 0.5,
+    ascensionWait: 1.5,
+    meleeExtraWait: 0.3,
     adsToSuperWait: 2.5,
-    superWait: 1.8,
+    superWait: 1.9,
     sprintATime: 0.1,
     sprintToFinisher: 0,
   },
@@ -180,8 +180,8 @@ export async function checkForAppUpdate(): Promise<AppUpdate | null> {
     if (!import.meta.env.DEV || !new URLSearchParams(window.location.search).has("mockUpdate")) return null;
     return {
       available: true,
-      currentVersion: "0.3.2",
-      version: "0.3.3",
+      currentVersion: "0.3.3",
+      version: "0.3.4",
       date: new Date().toISOString(),
       body: "改进更新提醒，并修复长时间运行时的状态同步。",
       rawJson: {},
@@ -192,7 +192,7 @@ export async function checkForAppUpdate(): Promise<AppUpdate | null> {
 }
 
 export async function getAppVersion(): Promise<string> {
-  return isTauri() ? getVersion() : "0.3.2";
+  return isTauri() ? getVersion() : "0.3.3";
 }
 
 export async function installAppUpdate(
@@ -222,10 +222,6 @@ export async function installAppUpdate(
 
 export async function minimizeWindow(): Promise<void> {
   if (isTauri()) await getCurrentWindow().minimize();
-}
-
-export async function toggleMaximizeWindow(): Promise<void> {
-  if (isTauri()) await getCurrentWindow().toggleMaximize();
 }
 
 export async function closeWindow(): Promise<void> {

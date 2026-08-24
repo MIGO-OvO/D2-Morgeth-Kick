@@ -33,10 +33,10 @@ pub struct TimingConfig {
 impl Default for TimingConfig {
     fn default() -> Self {
         Self {
-            ascension_wait: 1.6,
-            melee_extra_wait: 0.5,
+            ascension_wait: 1.5,
+            melee_extra_wait: 0.3,
             ads_to_super_wait: 2.5,
-            super_wait: 1.8,
+            super_wait: 1.9,
             sprint_a_time: 0.1,
             sprint_to_finisher: 0.0,
         }
@@ -235,11 +235,11 @@ impl Default for AppConfig {
             reference_look_sensitivity: 15.0,
             reference_ads_modifier: 1.0,
             reference_field_of_view: 100.0,
-            first_aim_mode: FirstAimMode::Ads,
+            first_aim_mode: FirstAimMode::Hipfire,
             first_ads_base: [-2600, 50],
-            first_hip_base: [-1300, 25],
+            first_hip_base: [-1320, 30],
             void_arrow_base: [-300, 81],
-            void_arrow_trim: [0, 0],
+            void_arrow_trim: [-50, 0],
             sprint_base: [280, 0],
             sprint_trim: [0, 0],
             timings: TimingConfig::default(),
@@ -373,13 +373,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn default_offsets_match_python_reference() {
+    fn default_offsets_match_calibrated_reference() {
         let config = AppConfig::default();
-        assert_eq!(config.first_aim_mode, FirstAimMode::Ads);
+        assert_eq!(config.first_aim_mode, FirstAimMode::Hipfire);
         assert_eq!(config.first_ads_offset(), [-2600, 50]);
-        assert_eq!(config.first_hip_offset(), [-1300, 25]);
-        assert_eq!(config.void_arrow_offset(), [-300, 81]);
+        assert_eq!(config.first_hip_offset(), [-1320, 30]);
+        assert_eq!(config.void_arrow_offset(), [-350, 81]);
         assert_eq!(config.sprint_offset(), [280, 0]);
+        assert_eq!(config.timings.ascension_wait, 1.5);
+        assert_eq!(config.timings.melee_extra_wait, 0.3);
+        assert_eq!(config.timings.ads_to_super_wait, 2.5);
+        assert_eq!(config.timings.super_wait, 1.9);
+        assert_eq!(config.timings.sprint_a_time, 0.1);
+        assert_eq!(config.timings.sprint_to_finisher, 0.0);
     }
 
     #[test]
@@ -391,7 +397,7 @@ mod tests {
             ..AppConfig::default()
         };
         assert_eq!(config.first_ads_offset(), [-2600, 50]);
-        assert_eq!(config.first_hip_offset(), [-1950, 38]);
+        assert_eq!(config.first_hip_offset(), [-1980, 45]);
         assert_eq!(config.void_arrow_offset(), [-445, 119]);
     }
 
@@ -439,8 +445,8 @@ mod tests {
         assert_eq!(config.look_sensitivity, 10.0);
         assert_eq!(config.field_of_view, 100.0);
         assert_eq!(config.reference_field_of_view, 100.0);
-        assert_eq!(config.first_aim_mode, FirstAimMode::Ads);
-        assert_eq!(config.first_hip_base, [-1300, 25]);
+        assert_eq!(config.first_aim_mode, FirstAimMode::Hipfire);
+        assert_eq!(config.first_hip_base, [-1320, 30]);
         assert!(config.validate().is_ok());
     }
 

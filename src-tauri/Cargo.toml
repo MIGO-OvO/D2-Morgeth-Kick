@@ -1,6 +1,6 @@
 [package]
 name = "d2-morgeth-kick-desktop"
-version = "0.3.2"
+version = "0.3.3"
 description = "Lightweight calibration and action runner for D2 Morgeth Kick"
 authors = ["D2 Morgeth Kick contributors"]
 license = "MIT"
