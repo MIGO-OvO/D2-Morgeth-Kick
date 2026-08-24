@@ -11,9 +11,7 @@
 
 ## 项目概览 (Overview)
 
-D2 Morgeth Kick 是一款 Windows 动作校准工具。它基于原项目重构，优化了底层架构，安装体积更小。新的 GUI 把分辨率、灵敏度、瞄准偏移、动作等待和按键映射集中在一个窗口里。
-
-这不是自动刷取工具。当前版本不识别 Boss 或玩家状态，也不会自动循环、点击地图或收集掉落。程序只按保存的参数执行一次序列。默认按 F10 会中止当前步骤并释放已按下的键位。
+D2 Morgeth Kick 是一款针对命运2的自动化获取征服战利品工具。它基于D2-Ogre-Kick项目重构，优化了底层架构，安装体积更小，具有可视化UI交互界面。
 
 [打开产品门户](https://migo-ovo.github.io/D2-Morgeth-Kick/) · [GitHub 下载 v0.3.2](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.2-Windows-x64-setup.exe) · [夸克网盘下载](https://pan.quark.cn/s/69e59cd59e04)
 
