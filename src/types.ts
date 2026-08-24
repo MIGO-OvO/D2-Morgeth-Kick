@@ -1,4 +1,5 @@
 export type ResolutionMode = "auto" | "manual";
+export type FirstAimMode = "ads" | "hipfire";
 export type RuntimeStatus =
   | "ready"
   | "running"
@@ -42,7 +43,9 @@ export interface AppConfig {
   referenceLookSensitivity: number;
   referenceAdsModifier: number;
   referenceFieldOfView: number;
+  firstAimMode: FirstAimMode;
   firstAdsBase: [number, number];
+  firstHipBase: [number, number];
   voidArrowBase: [number, number];
   voidArrowTrim: [number, number];
   sprintBase: [number, number];
@@ -60,6 +63,7 @@ export interface AppliedOffsets {
   lookScale: number;
   fovScale: number;
   firstAds: [number, number];
+  firstHip: [number, number];
   voidArrow: [number, number];
   sprint: [number, number];
 }

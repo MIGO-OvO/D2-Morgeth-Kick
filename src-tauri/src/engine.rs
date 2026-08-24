@@ -6,7 +6,7 @@ use std::{
 use tauri::AppHandle;
 
 use crate::{
-    config::{AppConfig, AppliedGameKeys},
+    config::{AppConfig, AppliedGameKeys, FirstAimMode},
     input::{self, KEY_A, KEY_D, KEY_S, KEY_W},
     runtime::AppState,
 };
@@ -205,16 +205,35 @@ fn post_ascension(
     key(state, KEY_S, false)?;
 
     wait_until(state, start, 2.109)?;
-    set_phase(app, state, 3, "ADS 近战");
-    right_mouse(state, true)?;
+    let uses_ads = config.first_aim_mode == FirstAimMode::Ads;
+    set_phase(
+        app,
+        state,
+        3,
+        if uses_ads {
+            "ADS 近战"
+        } else {
+            "腰射近战"
+        },
+    );
+    if uses_ads {
+        right_mouse(state, true)?;
+    }
     wait_until(state, start, 2.125)?;
-    turn_camera(state, config.first_ads_offset(), config.first_ads_base, 10)?;
+    let (first_offset, first_reference) = if uses_ads {
+        (config.first_ads_offset(), config.first_ads_base)
+    } else {
+        (config.first_hip_offset(), config.first_hip_base)
+    };
+    turn_camera(state, first_offset, first_reference, 10)?;
 
     wait_until(state, start, 4.047)?;
     wait_seconds(state, config.timings.melee_extra_wait)?;
     key(state, keys.melee, true)?;
     wait(state, Duration::from_millis(47))?;
-    right_mouse(state, false)?;
+    if uses_ads {
+        right_mouse(state, false)?;
+    }
     wait(state, Duration::from_millis(31))?;
     key(state, keys.melee, false)?;
 

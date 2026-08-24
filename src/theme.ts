@@ -1,13 +1,15 @@
 export type Theme = "light" | "dark";
 
-export const THEME_STORAGE_KEY = "d2-morgath-kick-theme";
+export const THEME_STORAGE_KEY = "d2-morgeth-kick-theme";
+const LEGACY_THEME_STORAGE_KEY = "d2-morgath-kick-theme";
 
 export function resolveTheme(): Theme {
   const preset = document.documentElement.dataset.theme;
   if (preset === "light" || preset === "dark") return preset;
 
   try {
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY)
+      ?? window.localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
     if (stored === "light" || stored === "dark") return stored;
   } catch {
     // The system preference remains available when storage is blocked.

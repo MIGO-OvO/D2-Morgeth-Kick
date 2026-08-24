@@ -4,12 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f5f6f8" />
-    <link rel="icon" type="image/png" href="/portal/morgath-logo.png" />
-    <title>D2 Morgath Kick</title>
+    <link rel="icon" type="image/png" href="/portal/morgeth-logo.png" />
+    <title>D2 Morgeth Kick</title>
     <script>
       (() => {
         try {
-          const stored = localStorage.getItem("d2-morgath-kick-theme");
+          const stored = localStorage.getItem("d2-morgeth-kick-theme")
+            ?? localStorage.getItem("d2-morgath-kick-theme");
           document.documentElement.dataset.theme = stored === "light" || stored === "dark"
             ? stored
             : matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";

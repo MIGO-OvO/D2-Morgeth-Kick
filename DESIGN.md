@@ -1,5 +1,5 @@
 ---
-name: "D2 Morgath Kick"
+name: "D2 Morgeth Kick"
 description: "A calibrated Windows console for inspectable timing, precise tuning, and safe interruption."
 colors:
   action-blue: "#1769e0"
@@ -151,13 +151,13 @@ components:
     width: "100%"
 ---
 
-# Design System: D2 Morgath Kick
+# Design System: D2 Morgeth Kick
 
 ## Overview
 
 **Creative North Star: "精密校准台 / The Calibrated Console"**
 
-D2 Morgath Kick feels like a compact instrument placed beside the game: restrained, trustworthy, readable, and immediately operable. It keeps the recognizable character of a Windows utility without copying Windows Settings, using a neutral workbench, blue operational states, tabular calibration values, and a compact live-status summary.
+D2 Morgeth Kick feels like a compact instrument placed beside the game: restrained, trustworthy, readable, and immediately operable. It keeps the recognizable character of a Windows utility without copying Windows Settings, using a neutral workbench, blue operational states, tabular calibration values, and a compact live-status summary.
 
 The desktop console and public portal present light and dark themes as equal expressions of one semantic system. The Overlay is the quietest expression: a read-only safety instrument that exposes status, progress, and the stop action without competing with gameplay.
 
@@ -192,7 +192,7 @@ The palette is cool and neutral, with Action Blue reserved for operation and sel
 - **Subtle Instrument Surface:** Separates nested controls and readouts through tone instead of elevation.
 - **Separator and Strong Separator:** Define hierarchy, field boundaries, rails, and card edges.
 - **Instrument Ink, Secondary Ink, and Muted Ink:** Step from primary reading to support copy and metadata.
-- **Morgath Character Mark:** Uses the full-color square creature artwork without recoloring. Keep its teal background, square crop, and recognizable purple spore face intact across themes.
+- **Morgeth Character Mark:** Uses the full-color square creature artwork without recoloring. Keep its teal background, square crop, and recognizable purple spore face intact across themes.
 - **Overlay Charcoal:** Provides a stable dark safety surface independent of the desktop theme.
 
 **The One Operational Accent Rule.** Use Action Blue for actionable, current, or selected states, never as ambient decoration.

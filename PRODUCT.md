@@ -8,11 +8,11 @@ Windows desktop application with a public web portal
 
 ## Users
 
-The primary user runs D2 Morgath Kick beside Destiny 2 on Windows 10 or 11. They want to check the active setup, tune a deterministic keyboard-and-mouse sequence, start it without returning to a terminal, and stop it immediately if the run is wrong.
+The primary user runs D2 Morgeth Kick beside Destiny 2 on Windows 10 or 11. They want to check the active setup, tune a deterministic keyboard-and-mouse sequence, start it without returning to a terminal, and stop it immediately if the run is wrong.
 
 ## Product Purpose
 
-D2 Morgath Kick is a compact desktop calibration console for one fixed Morgath Kick action sequence. It gives the operator a visible place to confirm resolution and sensitivity, adjust aiming offsets and timing, follow the current phase, and abort the sequence safely.
+D2 Morgeth Kick is a compact desktop calibration console for one fixed Morgeth Kick action sequence. It gives the operator a visible place to confirm resolution and sensitivity, adjust aiming offsets and timing, follow the current phase, and abort the sequence safely.
 
 Success means the operator can understand the current configuration at a glance, make a small correction without editing a file, and trust the configured stop hotkey to stop the sequence and release held inputs.
 
@@ -27,14 +27,15 @@ The product turns a hard-coded replay script into an inspectable timing instrume
 - F8 starts the sequence and F10 aborts it globally by default; both hotkeys are configurable.
 - The reference setup is 1920 x 1080, field of view 100, look sensitivity 15, and ADS modifier 1.0.
 - The GitHub Pages portal introduces the tool, links to the source repository, and downloads the latest Windows release.
+- The desktop checks the latest GitHub Release shortly after launch and every 12 hours while it remains open. Updates are user-confirmed, signature-verified, and never install while the action sequence is active.
 
 ## Capabilities and Constraints
 
 - Rust owns the keyboard and mouse input sequence.
-- Non-movement gameplay keys are configurable; W/A/S/D and right-mouse ADS remain fixed.
+- Non-movement gameplay keys are configurable; W/A/S/D remain fixed, and ADS mode uses fixed right-mouse input.
 - First launch shows the required armor, subclass, FOV, and in-game positioning checklist and keeps it available from the main window.
 - The interface detects the Destiny 2 client size and also accepts a manual resolution.
-- The operator can adjust the first ADS movement, void-arrow landing point, sprint direction, timing, look sensitivity, and ADS modifier.
+- The operator can switch between weapon-dependent ADS turning and direct hip-fire turning. Each mode keeps an independent first-turn calibration, while void-arrow landing point, sprint direction, timing, look sensitivity, and ADS modifier remain adjustable.
 - Every wait and mouse-movement step must be cancellable. Abort, error, and application exit must release held inputs.
 - The overlay is read-only, click-through, and synchronized through Tauri events. It is process-bound to `destiny2.exe`, appears only while the game is foreground, follows the upper-center of the game client area, and supports configurable opacity.
 - The main window uses a custom title bar with familiar Windows minimize, maximize/restore, close, drag, and double-click behavior.
@@ -44,11 +45,11 @@ The product turns a hard-coded replay script into an inspectable timing instrume
 
 ## Brand Commitments
 
-The product name is D2 Morgath Kick. The GitHub repository is named `D2-Morgath-Kick`.
+The product name is D2 Morgeth Kick. The GitHub repository is named `D2-Morgeth-Kick`.
 
 The product speaks in short, direct Chinese. It avoids game-themed hype and does not claim that the sequence succeeds in game. Labels name the setting or action; help text explains the assumption that matters.
 
-The project logo is the supplied square Morgath creature artwork: a purple spore-faced, bone-armored character on a teal background. The same source image is used across the desktop application, native package icons, README, and portal; it is not recolored between light and dark themes.
+The project logo is the supplied square Morgeth creature artwork: a purple spore-faced, bone-armored character on a teal background. The same source image is used across the desktop application, native package icons, README, and portal; it is not recolored between light and dark themes.
 
 ## Evidence on Hand
 

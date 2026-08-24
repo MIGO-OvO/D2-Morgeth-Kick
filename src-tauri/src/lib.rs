@@ -106,10 +106,7 @@ fn detect_resolution() -> resolution::ResolutionInfo {
 }
 
 fn start_internal(app: tauri::AppHandle, state: Arc<AppState>) -> Result<RuntimeSnapshot, String> {
-    state
-        .running
-        .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-        .map_err(|_| "动作序列已经在运行".to_string())?;
+    state.try_begin_sequence().map_err(str::to_string)?;
     let config = state
         .config
         .lock()
@@ -155,6 +152,18 @@ fn stop_internal(app: &tauri::AppHandle, state: &Arc<AppState>) -> RuntimeSnapsh
     } else {
         state.snapshot()
     }
+}
+
+fn release_configured_inputs(state: &Arc<AppState>) {
+    let configured_keys = state
+        .config
+        .lock()
+        .unwrap_or_else(|poison| poison.into_inner())
+        .game_keys
+        .applied()
+        .map(|keys| keys.all())
+        .unwrap_or_default();
+    input::release_all(&configured_keys);
 }
 
 fn sync_overlay_to_game(app: &tauri::AppHandle, state: &Arc<AppState>) {
@@ -230,6 +239,41 @@ fn set_overlay_visible(
     Ok(visible)
 }
 
+#[tauri::command]
+fn prepare_for_update(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<AppState>>,
+) -> Result<(), String> {
+    let state = state.inner().clone();
+    let was_running = state.lock_for_update().map_err(str::to_string)?;
+    if was_running {
+        state.request_cancel(&app);
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while state.running.load(Ordering::Acquire) && std::time::Instant::now() < deadline {
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+    }
+    release_configured_inputs(&state);
+    if state.running.load(Ordering::Acquire) {
+        state.unlock_update();
+        return Err("动作序列尚未安全停止，更新已取消".into());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn cancel_update_preparation(state: State<'_, Arc<AppState>>) {
+    release_configured_inputs(state.inner());
+    state.unlock_update();
+}
+
+#[tauri::command]
+fn restart_after_update(app: tauri::AppHandle, state: State<'_, Arc<AppState>>) {
+    state.cancel.store(true, Ordering::Release);
+    release_configured_inputs(state.inner());
+    app.restart();
+}
+
 pub fn run() {
     let global_shortcut = tauri_plugin_global_shortcut::Builder::new()
         .with_handler(|app, shortcut, event| {
@@ -262,6 +306,8 @@ pub fn run() {
             let shortcuts = config.hotkeys.shortcuts()?;
             let state = Arc::new(AppState::new(config));
             app.manage(Arc::clone(&state));
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
             if let Err(error) = register_shortcuts(app.handle(), shortcuts) {
                 state.update(app.handle(), |runtime| {
                     runtime.status = RuntimeStatus::Error;
@@ -284,15 +330,7 @@ pub fn run() {
             {
                 let state = window.state::<Arc<AppState>>().inner().clone();
                 state.cancel.store(true, Ordering::Release);
-                let configured_keys = state
-                    .config
-                    .lock()
-                    .unwrap_or_else(|poison| poison.into_inner())
-                    .game_keys
-                    .applied()
-                    .map(|keys| keys.all())
-                    .unwrap_or_default();
-                input::release_all(&configured_keys);
+                release_configured_inputs(&state);
                 window.app_handle().exit(0);
             }
         })
@@ -304,7 +342,10 @@ pub fn run() {
             start_sequence,
             stop_sequence,
             set_overlay_visible,
+            prepare_for_update,
+            cancel_update_preparation,
+            restart_after_update,
         ])
         .run(tauri::generate_context!())
-        .expect("启动 D2 Morgath Kick 失败");
+        .expect("启动 D2 Morgeth Kick 失败");
 }

@@ -177,6 +177,23 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 .error-banner { margin: 12px clamp(18px, 2vw, 28px) 0; display: flex; align-items: center; gap: 10px; padding: 11px 13px; border: 1px solid var(--line-danger); border-radius: var(--radius-sm); background: var(--surface-danger); color: var(--text-danger); font-size: 13px; line-height: 1.4; }
 .error-banner span { flex: 1; }
 .error-banner button { border: 0; background: transparent; font-size: 18px; cursor: pointer; }
+.update-banner { margin: 12px clamp(18px, 2vw, 28px) 0; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 13px; border: 1px solid var(--line-info); border-radius: var(--radius-sm); background: var(--surface-info); color: var(--text-info); box-shadow: inset 3px 0 0 var(--blue); }
+.update-banner.error { border-color: color-mix(in srgb, var(--amber) 35%, var(--line)); background: var(--surface-note); box-shadow: inset 3px 0 0 var(--amber); }
+.update-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; background: var(--blue-soft); color: var(--blue); }
+.update-banner.error .update-mark { color: var(--amber); }
+.update-mark .icon { width: 16px; height: 16px; }
+.update-banner.checking .update-mark .icon, .check-update-button:disabled .icon { animation: update-spin 1.1s linear infinite; }
+.update-copy { min-width: 0; display: grid; gap: 3px; }
+.update-copy strong { color: var(--text-info-strong); font-size: 13px; }
+.update-copy > span { max-width: 76ch; overflow: hidden; font-size: 11px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+.update-copy small { color: var(--amber); font-size: 10px; line-height: 1.45; }
+.update-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
+.update-actions .text-button { padding: 0 6px; }
+.update-progress { position: relative; width: min(420px, 100%); height: 4px; margin-top: 5px; border-radius: 2px; background: var(--line-info); overflow: hidden; }
+.update-progress span { display: block; height: 100%; border-radius: inherit; background: var(--blue); transition: width 140ms ease; }
+.update-progress.indeterminate span { width: 34%; animation: update-progress 1.25s ease-in-out infinite; }
+@keyframes update-spin { to { transform: rotate(360deg); } }
+@keyframes update-progress { from { transform: translateX(-110%); } to { transform: translateX(310%); } }
 main { max-width: 1500px; margin: 0 auto; padding: 18px clamp(18px, 2vw, 28px) 24px; }
 .section-heading { display: flex; align-items: flex-start; justify-content: space-between; }
 .section-heading h2 { margin: 0; font-family: var(--font-display); font-size: 16px; letter-spacing: -.01em; }
@@ -191,6 +208,8 @@ main { max-width: 1500px; margin: 0 auto; padding: 18px clamp(18px, 2vw, 28px) 2
 .segment-control { display: grid; grid-template-columns: 1fr 1fr; margin-top: 15px; padding: 2px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-subtle); }
 .segment-control button { min-height: 32px; border: 0; border-radius: 5px; background: transparent; color: var(--text-soft); font-size: 12px; cursor: pointer; }
 .segment-control button.active { background: var(--control); color: var(--text); font-weight: 650; box-shadow: 0 1px 3px rgba(0,0,0,.16); }
+.aim-mode-control { margin-top: 14px; }
+.mode-note { min-height: 34px; margin: 8px 1px 0; color: var(--text-muted); font-size: 10px; line-height: 1.5; }
 .resolution-result { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding: 12px 13px; border: 1px solid var(--line-info); border-radius: var(--radius-sm); background: var(--surface-info); }
 .resolution-result div { display: grid; gap: 2px; }
 .resolution-result span { color: var(--text-info); font-size: 11px; }
@@ -241,7 +260,10 @@ main { max-width: 1500px; margin: 0 auto; padding: 18px clamp(18px, 2vw, 28px) 2
 .footer-actions { display: flex; align-items: center; gap: 5px; }
 .footer-actions button { min-height: 30px; display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; border: 0; border-radius: 5px; background: transparent; color: var(--text-soft); font-size: 11px; font-weight: 650; cursor: pointer; }
 .footer-actions button:hover { background: var(--surface-subtle); color: var(--text); }
+.footer-actions button:disabled { opacity: .45; cursor: not-allowed; }
 .footer-actions .icon { width: 14px; height: 14px; }
+.footer-actions .check-update-button { gap: 5px; }
+.check-update-button small { padding-left: 2px; color: var(--metadata); font-family: var(--font-mono); font-size: 9px; font-weight: 500; }
 .save-indicator { display: flex; align-items: center; gap: 6px; flex: none; color: var(--text-muted); font-size: 10px; }
 .save-indicator > span { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
 .save-indicator.saving > span { background: var(--amber); }
@@ -333,6 +355,8 @@ main { max-width: 1500px; margin: 0 auto; padding: 18px clamp(18px, 2vw, 28px) 2
   main { padding: 12px; }
   .app-footer { min-height: 64px; align-items: flex-start; padding: 8px 12px; }
   .footer-actions { align-self: center; }
+  .update-banner { grid-template-columns: 36px minmax(0, 1fr); margin-right: 12px; margin-left: 12px; }
+  .update-actions { grid-column: 2; justify-content: flex-start; }
 }
 
 @media (max-width: 540px) {
@@ -346,6 +370,10 @@ main { max-width: 1500px; margin: 0 auto; padding: 18px clamp(18px, 2vw, 28px) 2
   .workspace-tabs button { font-size: 11px; }
   .game-settings-grid, .pair-fields, .timing-list { grid-template-columns: 1fr; }
   .save-indicator { display: none; }
+  .update-banner { align-items: start; }
+  .update-copy > span { white-space: normal; }
+  .update-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .update-actions .text-button { grid-column: 1 / -1; justify-content: flex-start; }
   .hotkey-grid, .game-key-grid { grid-template-columns: 1fr; }
   .dialog-heading, .key-section { padding-right: 16px; padding-left: 16px; }
   .usage-steps { padding-right: 16px; padding-left: 16px; }

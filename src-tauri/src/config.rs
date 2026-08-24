@@ -12,6 +12,13 @@ pub enum ResolutionMode {
     Manual,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum FirstAimMode {
+    Ads,
+    Hipfire,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct TimingConfig {
@@ -154,7 +161,9 @@ pub struct AppConfig {
     pub reference_look_sensitivity: f64,
     pub reference_ads_modifier: f64,
     pub reference_field_of_view: f64,
+    pub first_aim_mode: FirstAimMode,
     pub first_ads_base: [i32; 2],
+    pub first_hip_base: [i32; 2],
     pub void_arrow_base: [i32; 2],
     pub void_arrow_trim: [i32; 2],
     pub sprint_base: [i32; 2],
@@ -179,7 +188,9 @@ impl Default for AppConfig {
             reference_look_sensitivity: 15.0,
             reference_ads_modifier: 1.0,
             reference_field_of_view: 100.0,
+            first_aim_mode: FirstAimMode::Ads,
             first_ads_base: [-2600, 50],
+            first_hip_base: [-1600, 31],
             void_arrow_base: [-300, 81],
             void_arrow_trim: [0, 0],
             sprint_base: [280, 0],
@@ -226,7 +237,7 @@ impl AppConfig {
         for (name, value) in [
             ("飞升后等待", self.timings.ascension_wait),
             ("近战额外等待", self.timings.melee_extra_wait),
-            ("ADS 至超能", self.timings.ads_to_super_wait),
+            ("首次转向至超能", self.timings.ads_to_super_wait),
             ("超能后等待", self.timings.super_wait),
             ("冲刺侧移时间", self.timings.sprint_a_time),
             ("冲刺至终结", self.timings.sprint_to_finisher),
@@ -261,6 +272,10 @@ impl AppConfig {
 
     pub fn first_ads_offset(&self) -> [i32; 2] {
         scale_and_trim(self.first_ads_base, self.ads_scale(), [0, 0])
+    }
+
+    pub fn first_hip_offset(&self) -> [i32; 2] {
+        scale_and_trim(self.first_hip_base, self.look_scale(), [0, 0])
     }
 
     pub fn void_arrow_offset(&self) -> [i32; 2] {
@@ -320,7 +335,9 @@ mod tests {
     #[test]
     fn default_offsets_match_python_reference() {
         let config = AppConfig::default();
+        assert_eq!(config.first_aim_mode, FirstAimMode::Ads);
         assert_eq!(config.first_ads_offset(), [-2600, 50]);
+        assert_eq!(config.first_hip_offset(), [-1600, 31]);
         assert_eq!(config.void_arrow_offset(), [-300, 81]);
         assert_eq!(config.sprint_offset(), [280, 0]);
     }
@@ -334,6 +351,7 @@ mod tests {
             ..AppConfig::default()
         };
         assert_eq!(config.first_ads_offset(), [-2600, 50]);
+        assert_eq!(config.first_hip_offset(), [-2400, 47]);
         assert_eq!(config.void_arrow_offset(), [-445, 119]);
     }
 
@@ -346,6 +364,7 @@ mod tests {
         let expected = (45_f64.to_radians()).tan() / (50_f64.to_radians()).tan();
         assert!((config.fov_scale() - expected).abs() < 1e-10);
         assert_eq!(config.first_ads_offset(), [-2182, 42]);
+        assert_eq!(config.first_hip_offset(), [-1343, 26]);
         assert_eq!(config.void_arrow_offset(), [-252, 68]);
         assert_eq!(config.sprint_offset(), [235, 0]);
     }
@@ -376,7 +395,22 @@ mod tests {
         assert_eq!(config.look_sensitivity, 10.0);
         assert_eq!(config.field_of_view, 100.0);
         assert_eq!(config.reference_field_of_view, 100.0);
+        assert_eq!(config.first_aim_mode, FirstAimMode::Ads);
+        assert_eq!(config.first_hip_base, [-1600, 31]);
         assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn hipfire_mode_round_trips_through_settings_json() {
+        let config = AppConfig {
+            first_aim_mode: FirstAimMode::Hipfire,
+            first_hip_base: [-1580, 29],
+            ..AppConfig::default()
+        };
+        let raw = serde_json::to_string(&config).unwrap();
+        let decoded: AppConfig = serde_json::from_str(&raw).unwrap();
+        assert_eq!(decoded.first_aim_mode, FirstAimMode::Hipfire);
+        assert_eq!(decoded.first_hip_base, [-1580, 29]);
     }
 
     #[test]

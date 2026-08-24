@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getVersion } from "@tauri-apps/api/app";
+import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updater";
 import type {
   AppConfig,
   AppliedOffsets,
@@ -18,7 +20,9 @@ export const defaultConfig: AppConfig = {
   referenceLookSensitivity: 15,
   referenceAdsModifier: 1,
   referenceFieldOfView: 100,
+  firstAimMode: "ads",
   firstAdsBase: [-2600, 50],
+  firstHipBase: [-1600, 31],
   voidArrowBase: [-300, 81],
   voidArrowTrim: [0, 0],
   sprintBase: [280, 0],
@@ -56,6 +60,9 @@ export const defaultRuntime: RuntimeSnapshot = {
 
 const isTauri = () => "__TAURI_INTERNALS__" in window;
 
+export type AppUpdate = Update;
+export type AppUpdateDownloadEvent = DownloadEvent;
+
 let mockConfig = structuredClone(defaultConfig);
 let mockRuntime = structuredClone(defaultRuntime);
 const mockListeners = new Set<(value: RuntimeSnapshot) => void>();
@@ -78,7 +85,8 @@ function startMock() {
   let phase = 0;
   mockTimer = window.setInterval(() => {
     phase += 1;
-    const phases = ["进场准备", "飞升", "后退定位", "ADS 近战", "虚空箭", "冲刺", "终结"];
+    const firstAimPhase = mockConfig.firstAimMode === "ads" ? "ADS 近战" : "腰射近战";
+    const phases = ["进场准备", "飞升", "后退定位", firstAimPhase, "虚空箭", "冲刺", "终结"];
     if (phase >= phases.length) {
       if (mockTimer) window.clearInterval(mockTimer);
       emitMock({
@@ -116,6 +124,7 @@ export function calculateAppliedOffsets(config: AppConfig): AppliedOffsets {
     lookScale,
     fovScale,
     firstAds: apply(config.firstAdsBase, adsScale),
+    firstHip: apply(config.firstHipBase, lookScale),
     voidArrow: apply(config.voidArrowBase, lookScale, config.voidArrowTrim),
     sprint: apply(config.sprintBase, lookScale, config.sprintTrim),
   };
@@ -165,6 +174,51 @@ export async function setOverlayVisible(visible: boolean): Promise<boolean> {
   if (isTauri()) return invoke<boolean>("set_overlay_visible", { visible });
   mockConfig.overlayVisible = visible;
   return visible;
+}
+
+export async function checkForAppUpdate(): Promise<AppUpdate | null> {
+  if (!isTauri()) {
+    if (!import.meta.env.DEV || !new URLSearchParams(window.location.search).has("mockUpdate")) return null;
+    return {
+      available: true,
+      currentVersion: "0.3.0",
+      version: "0.3.1",
+      date: new Date().toISOString(),
+      body: "改进更新提醒，并修复长时间运行时的状态同步。",
+      rawJson: {},
+      close: async () => undefined,
+    } as AppUpdate;
+  }
+  return check({ timeout: 15_000 });
+}
+
+export async function getAppVersion(): Promise<string> {
+  return isTauri() ? getVersion() : "0.3.0";
+}
+
+export async function installAppUpdate(
+  update: AppUpdate,
+  onEvent: (event: AppUpdateDownloadEvent) => void,
+): Promise<void> {
+  if (!isTauri()) {
+    const total = 4 * 1024 * 1024;
+    const chunkLength = total / 4;
+    onEvent({ event: "Started", data: { contentLength: total } });
+    for (let index = 0; index < 4; index += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 120));
+      onEvent({ event: "Progress", data: { chunkLength } });
+    }
+    onEvent({ event: "Finished" });
+    return;
+  }
+  await invoke("prepare_for_update");
+  try {
+    await update.downloadAndInstall(onEvent, { timeout: 120_000 });
+    await invoke("restart_after_update");
+  } catch (reason) {
+    await invoke("cancel_update_preparation").catch(() => undefined);
+    throw reason;
+  }
 }
 
 export async function minimizeWindow(): Promise<void> {

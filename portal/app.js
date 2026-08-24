@@ -1,4 +1,4 @@
-const pageThemeKey = "d2-morgath-kick-portal-theme";
+const pageThemeKey = "d2-morgeth-kick-portal-theme";
 const pageThemeButton = document.querySelector(".site-theme-toggle");
 const themeColor = document.querySelector('meta[name="theme-color"]');
 const preview = document.querySelector(".console-window");
@@ -44,14 +44,14 @@ const initialTheme = document.documentElement.dataset.theme === "dark" ? "dark" 
 setPageTheme(initialTheme, false);
 setPreviewTheme(initialTheme);
 
-fetch("https://api.github.com/repos/MIGO-OvO/D2-Morgath-Kick/releases/latest", {
+fetch("https://api.github.com/repos/MIGO-OvO/D2-Morgeth-Kick/releases/latest", {
   headers: { Accept: "application/vnd.github+json" },
 })
   .then((response) => response.ok ? response.json() : Promise.reject(new Error("Release unavailable")))
   .then((release) => {
     const version = document.querySelector("#release-version");
     if (version && release.tag_name) version.textContent = release.tag_name;
-    const asset = release.assets?.find((item) => item.name === "D2-Morgath-Kick-Windows-x64-setup.exe");
+    const asset = release.assets?.find((item) => item.name === "D2-Morgeth-Kick-Windows-x64-setup.exe");
     if (asset?.browser_download_url) {
       document.querySelectorAll('a[href*="/releases/latest/download/"]').forEach((link) => {
         link.href = asset.browser_download_url;

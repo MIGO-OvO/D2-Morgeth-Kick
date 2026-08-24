@@ -4,14 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#f4f5f7" />
-    <meta name="description" content="D2 Morgath Kick 是基于原项目重构的 Windows 自动踢币脚本，体积更小，GUI 更易用，并提供更完整的参数调整。" />
-    <link rel="icon" type="image/png" href="./morgath-logo.png" />
-    <link rel="apple-touch-icon" href="./morgath-logo.png" />
-    <title>D2 Morgath Kick | Windows 自动踢币脚本</title>
+    <meta name="description" content="D2 Morgeth Kick 是基于原项目重构的 Windows 自动踢币脚本，体积更小，GUI 更易用，并提供更完整的参数调整。" />
+    <link rel="icon" type="image/png" href="./morgeth-logo.png" />
+    <link rel="apple-touch-icon" href="./morgeth-logo.png" />
+    <title>D2 Morgeth Kick | Windows 自动踢币脚本</title>
     <script>
       (() => {
         try {
-          const stored = localStorage.getItem("d2-morgath-kick-portal-theme");
+          const stored = localStorage.getItem("d2-morgeth-kick-portal-theme")
+            ?? localStorage.getItem("d2-morgath-kick-portal-theme");
           document.documentElement.dataset.theme = stored === "light" || stored === "dark"
             ? stored
             : matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -24,14 +25,14 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="site-brand" href="#top" aria-label="D2 Morgath Kick 首页">
-        <img class="brand-mark" src="./morgath-logo.png" alt="" aria-hidden="true" />
-        <span><strong>Morgath Kick</strong><small>Windows 动作校准工具</small></span>
+      <a class="site-brand" href="#top" aria-label="D2 Morgeth Kick 首页">
+        <img class="brand-mark" src="./morgeth-logo.png" alt="" aria-hidden="true" />
+        <span><strong>Morgeth Kick</strong><small>Windows 动作校准工具</small></span>
       </a>
       <nav class="site-nav" aria-label="主导航">
         <a href="#app">程序界面</a>
         <a href="#features">特点</a>
-        <a href="https://github.com/MIGO-OvO/D2-Morgath-Kick" target="_blank" rel="noreferrer">GitHub</a>
+        <a href="https://github.com/MIGO-OvO/D2-Morgeth-Kick" target="_blank" rel="noreferrer">GitHub</a>
       </nav>
       <button class="site-theme-toggle" type="button" aria-label="切换深色模式" title="切换深色模式">
         <svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.2A8.5 8.5 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z" /></svg>
@@ -42,17 +43,17 @@
 
     <main id="top">
       <section class="hero" aria-labelledby="hero-title">
-        <p class="eyebrow">D2 Morgath Kick / 0.1</p>
+        <p class="eyebrow">D2 Morgeth Kick / 0.3</p>
         <h1 id="hero-title">自动化踢币工具<br /><span>可视化校准</span></h1>
         <p class="hero-intro">项目基于D2-Ogre-Kick重构而来。底层架构完全重构，程序更小巧；GUI 多参数可调，多分辨率适配。</p>
         <div class="hero-actions">
-          <a class="button primary" id="download-link" href="https://github.com/MIGO-OvO/D2-Morgath-Kick/releases/latest/download/D2-Morgath-Kick-Windows-x64-setup.exe">
+          <a class="button primary" id="download-link" href="https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-Windows-x64-setup.exe">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 20h14" /></svg>
             下载 Windows 版
           </a>
-          <a class="button secondary" href="https://github.com/MIGO-OvO/D2-Morgath-Kick" target="_blank" rel="noreferrer">查看源码</a>
+          <a class="button secondary" href="https://github.com/MIGO-OvO/D2-Morgeth-Kick" target="_blank" rel="noreferrer">查看源码</a>
         </div>
-        <p class="release-note"><span class="status-dot" aria-hidden="true"></span><span id="release-version">v0.2.0</span><span>64 位 Windows 10 / 11</span></p>
+        <p class="release-note"><span class="status-dot" aria-hidden="true"></span><span id="release-version">v0.3.0</span><span>64 位 Windows 10 / 11</span></p>
       </section>
 
       <section class="app-showcase" id="app" aria-labelledby="app-title">
@@ -64,7 +65,7 @@
           <p>主窗口完整显示分辨率、灵敏度、瞄准偏移和动作时序。改值时能立即看到应用结果，不必编辑配置文件。</p>
         </div>
 
-        <div class="console-stage" aria-label="D2 Morgath Kick 应用界面预览">
+        <div class="console-stage" aria-label="D2 Morgeth Kick 应用界面预览">
           <div class="stage-toolbar">
             <span><i aria-hidden="true"></i> 完整程序预览</span>
             <div class="stage-theme-switch" role="group" aria-label="预览主题">
@@ -74,8 +75,8 @@
           </div>
           <div class="console-window" data-preview="light">
             <div class="console-header">
-              <img class="console-brand" src="./morgath-logo.png" alt="" aria-hidden="true" />
-              <span class="console-title"><strong>Morgath Kick</strong></span>
+              <img class="console-brand" src="./morgeth-logo.png" alt="" aria-hidden="true" />
+              <span class="console-title"><strong>Morgeth Kick</strong></span>
               <span class="console-runtime"><i></i><span><strong>就绪</strong><small>参数已就绪，按 F8 启动</small></span></span>
               <span class="console-resolution"><small>自动识别</small><strong>1920 × 1080</strong></span>
               <span class="console-actions"><span>深色</span><span>悬浮窗</span><b>启动 <kbd>F8</kbd></b></span>
@@ -87,7 +88,7 @@
                   <li class="active"><i>1</i><span>进场准备</span></li>
                   <li><i>2</i><span>飞升</span></li>
                   <li><i>3</i><span>后退定位</span></li>
-                  <li><i>4</i><span>ADS 近战</span></li>
+                  <li><i>4</i><span>首次转向近战</span></li>
                   <li><i>5</i><span>虚空箭</span></li>
                   <li><i>6</i><span>冲刺</span></li>
                   <li><i>7</i><span>终结</span></li>
@@ -106,7 +107,7 @@
                 <section class="console-panel aiming-panel">
                   <div class="panel-heading"><div><h3>瞄准偏移</h3><p>修正虚空箭落点与冲刺朝向。</p></div></div>
                   <div class="vector-card"><span>虚空箭</span><b>X -300 · Y 81</b><i></i></div>
-                  <div class="offset-card selected"><span><strong>首次 ADS</strong><small>近战前的主瞄准移动</small></span><b>-2600, 50</b><div class="field-grid"><label>X 基准<em>-2600</em></label><label>Y 基准<em>50</em></label></div></div>
+                  <div class="offset-card selected"><span><strong>首次转向</strong><small>支持 ADS 与腰射直投模式</small></span><b>-1600, 31</b><div class="field-grid"><label>X 基准<em>-1600</em></label><label>Y 基准<em>31</em></label></div></div>
                   <div class="offset-card"><span><strong>虚空箭落点</strong><small>在参考落点上微调</small></span><b>-300, 81</b><div class="field-grid"><label>X 微调<em>0</em></label><label>Y 微调<em>0</em></label></div></div>
                 </section>
 
@@ -114,8 +115,8 @@
                   <div class="panel-heading"><div><h3>动作时序</h3><p>调整每段等待，F10 随时可停。</p></div></div>
                   <div class="timing-grid">
                     <label>飞升后等待<b>1.6 <small>秒</small></b><span>X 飞升至后退定位</span></label>
-                    <label>近战额外等待<b>0.5 <small>秒</small></b><span>ADS 到 C 近战追加</span></label>
-                    <label>ADS 至超能<b>2.5 <small>秒</small></b><span>从按下 ADS 起计算</span></label>
+                    <label>近战额外等待<b>0.5 <small>秒</small></b><span>首次转向到 C 近战追加</span></label>
+                    <label>首次转向至超能<b>2.5 <small>秒</small></b><span>从首次转向阶段计算</span></label>
                     <label>超能后等待<b>1.8 <small>秒</small></b><span>F 释放后至冲刺</span></label>
                     <label>冲刺侧移时间<b>0.1 <small>秒</small></b><span>A 先行按下时长</span></label>
                     <label>冲刺至终结<b>0.0 <small>秒</small></b><span>镜头微调后附加</span></label>
@@ -148,7 +149,7 @@
     </main>
 
     <footer class="site-footer">
-      <span>D2 Morgath Kick</span>
+      <span>D2 Morgeth Kick</span>
       <span>非官方开源项目，与 Bungie 无关联。使用前请自行确认适用的游戏条款。</span>
       <span>© 2026 MIGO_12</span>
     </footer>

@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   calculateAppliedOffsets,
+  checkForAppUpdate,
   closeWindow,
   defaultConfig,
   defaultRuntime,
   detectResolution,
+  getAppVersion,
   getConfig,
   getRuntimeSnapshot,
+  installAppUpdate,
   minimizeWindow,
   onRuntimeState,
   saveConfig,
@@ -14,6 +17,8 @@ import {
   startSequence,
   stopSequence,
   toggleMaximizeWindow,
+  type AppUpdate,
+  type AppUpdateDownloadEvent,
 } from "./api";
 import type {
   AppConfig,
@@ -34,11 +39,48 @@ import {
   type HotkeyModifier,
 } from "./keyboard";
 import { applyTheme, resolveTheme, THEME_STORAGE_KEY, type Theme } from "./theme";
-import morgathLogo from "../portal/morgath-logo.png";
+import morgethLogo from "../portal/morgeth-logo.png";
 
 type WorkspaceTab = "display" | "aim" | "timing";
 type SaveState = "idle" | "saving" | "saved" | "error";
 type OpenPanel = "guide" | "keys" | null;
+type UpdatePhase = "idle" | "checking" | "current" | "available" | "downloading" | "installing" | "error";
+
+interface UpdateNotice {
+  phase: UpdatePhase;
+  manual?: boolean;
+  version?: string;
+  notes?: string;
+  downloaded?: number;
+  total?: number;
+  message?: string;
+}
+
+const STARTUP_UPDATE_DELAY_MS = 4_500;
+const PERIODIC_UPDATE_INTERVAL_MS = 12 * 60 * 60 * 1_000;
+const SKIPPED_UPDATE_STORAGE_KEY = "d2-morgeth-kick-skipped-update";
+const LEGACY_SKIPPED_UPDATE_STORAGE_KEY = "d2-morgath-kick-skipped-update";
+
+function getSkippedUpdate(): string | null {
+  try {
+    return window.localStorage.getItem(SKIPPED_UPDATE_STORAGE_KEY)
+      ?? window.localStorage.getItem(LEGACY_SKIPPED_UPDATE_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function skipUpdateVersion(version: string) {
+  try {
+    window.localStorage.setItem(SKIPPED_UPDATE_STORAGE_KEY, version);
+  } catch {
+    // Skipping remains valid for this session even when storage is unavailable.
+  }
+}
+
+function formatVersion(version: string) {
+  return version.startsWith("v") ? version : `v${version}`;
+}
 
 const statusLabels: Record<RuntimeStatus, string> = {
   ready: "就绪",
@@ -247,12 +289,56 @@ export default function App() {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<WorkspaceTab>("display");
-  const [selectedVector, setSelectedVector] = useState<"ads" | "void" | "sprint">("void");
+  const [selectedVector, setSelectedVector] = useState<"first" | "void" | "sprint">("void");
   const [theme, setTheme] = useState<Theme>(resolveTheme);
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
+  const [appVersion, setAppVersion] = useState("0.3.0");
+  const [updateNotice, setUpdateNotice] = useState<UpdateNotice>({ phase: "idle" });
   const readyRef = useRef(false);
+  const pendingUpdateRef = useRef<AppUpdate | null>(null);
+  const checkingUpdateRef = useRef(false);
   const applied = useMemo(() => calculateAppliedOffsets(config), [config]);
   const running = ["running", "stopping"].includes(snapshot.status);
+
+  const disposePendingUpdate = useCallback(async () => {
+    const pending = pendingUpdateRef.current;
+    pendingUpdateRef.current = null;
+    if (pending) await pending.close().catch(() => undefined);
+  }, []);
+
+  const checkForUpdates = useCallback(async (manual = false) => {
+    if (checkingUpdateRef.current) return;
+    checkingUpdateRef.current = true;
+    setUpdateNotice({ phase: "checking", manual });
+    try {
+      const update = await checkForAppUpdate();
+      await disposePendingUpdate();
+      if (!update) {
+        setUpdateNotice(manual
+          ? { phase: "current", manual: true, message: `当前已是最新版本 v${appVersion}` }
+          : { phase: "idle" });
+        return;
+      }
+      if (!manual && getSkippedUpdate() === update.version) {
+        await update.close().catch(() => undefined);
+        setUpdateNotice({ phase: "idle" });
+        return;
+      }
+      pendingUpdateRef.current = update;
+      setUpdateNotice({
+        phase: "available",
+        version: update.version,
+        notes: update.body,
+      });
+    } catch (reason) {
+      console.info("Update check did not complete", reason);
+      setUpdateNotice(manual
+        ? { phase: "error", manual: true, message: "暂时无法连接 GitHub。动作功能不受影响，可稍后重试。" }
+        : { phase: "idle" });
+    } finally {
+      checkingUpdateRef.current = false;
+    }
+  }, [appVersion, disposePendingUpdate]);
 
   const updateConfig = <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => {
     setConfig((current) => ({ ...current, [key]: value }));
@@ -269,6 +355,7 @@ export default function App() {
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
+    void getAppVersion().then(setAppVersion).catch(() => undefined);
     Promise.all([getConfig(), getRuntimeSnapshot(), detectResolution()])
       .then(([nextConfig, nextSnapshot, nextResolution]) => {
         setConfig(nextConfig);
@@ -284,6 +371,23 @@ export default function App() {
     onRuntimeState(setSnapshot).then((dispose) => { unlisten = dispose; });
     return () => unlisten?.();
   }, []);
+
+  useEffect(() => {
+    const startupTimer = window.setTimeout(() => void checkForUpdates(false), STARTUP_UPDATE_DELAY_MS);
+    const periodicTimer = window.setInterval(() => void checkForUpdates(false), PERIODIC_UPDATE_INTERVAL_MS);
+    return () => {
+      window.clearTimeout(startupTimer);
+      window.clearInterval(periodicTimer);
+    };
+  }, [checkForUpdates]);
+
+  useEffect(() => () => { void disposePendingUpdate(); }, [disposePendingUpdate]);
+
+  useEffect(() => {
+    if (!["current", "error"].includes(updateNotice.phase)) return;
+    const timer = window.setTimeout(() => setUpdateNotice({ phase: "idle" }), 7_000);
+    return () => window.clearTimeout(timer);
+  }, [updateNotice.phase]);
 
   useEffect(() => {
     if (!readyRef.current) return;
@@ -320,6 +424,47 @@ export default function App() {
     const next = theme === "dark" ? "light" : "dark";
     applyTheme(next, true);
     setTheme(next);
+  };
+
+  const deferUpdate = () => {
+    void disposePendingUpdate();
+    setUpdateNotice({ phase: "idle" });
+  };
+
+  const skipAvailableUpdate = () => {
+    if (updateNotice.version) skipUpdateVersion(updateNotice.version);
+    void disposePendingUpdate();
+    setUpdateNotice({ phase: "idle" });
+  };
+
+  const installAvailableUpdate = async () => {
+    const update = pendingUpdateRef.current;
+    if (!update || running) return;
+    let downloaded = 0;
+    let total: number | undefined;
+    setUpdateNotice((current) => ({ ...current, phase: "downloading", downloaded: 0 }));
+    const onEvent = (event: AppUpdateDownloadEvent) => {
+      if (event.event === "Started") {
+        total = event.data.contentLength;
+        setUpdateNotice((current) => ({ ...current, phase: "downloading", downloaded: 0, total }));
+      } else if (event.event === "Progress") {
+        downloaded += event.data.chunkLength;
+        setUpdateNotice((current) => ({ ...current, phase: "downloading", downloaded, total }));
+      } else {
+        setUpdateNotice((current) => ({ ...current, phase: "installing", downloaded, total }));
+      }
+    };
+    try {
+      await installAppUpdate(update, onEvent);
+    } catch (reason) {
+      console.info("Update installation did not complete", reason);
+      await disposePendingUpdate();
+      setUpdateNotice({
+        phase: "error",
+        manual: true,
+        message: "更新下载或安装未完成。当前设置与动作功能不受影响，请稍后重试。",
+      });
+    }
   };
 
   const refreshResolution = async () => {
@@ -366,8 +511,10 @@ export default function App() {
   const currentResolution = config.resolutionMode === "manual"
     ? `${config.manualWidth} × ${config.manualHeight}`
     : resolution ? `${resolution.width} × ${resolution.height}` : "检测中";
-  const selectedPreview = selectedVector === "ads"
-    ? { label: "首次 ADS", value: applied.firstAds }
+  const usesAds = config.firstAimMode === "ads";
+  const firstAimLabel = usesAds ? "ADS 转向" : "腰射转向";
+  const selectedPreview = selectedVector === "first"
+    ? { label: firstAimLabel, value: usesAds ? applied.firstAds : applied.firstHip }
     : selectedVector === "void"
       ? { label: "虚空箭", value: applied.voidArrow }
       : { label: "冲刺", value: applied.sprint };
@@ -382,7 +529,18 @@ export default function App() {
     if (!config.usageGuideSeen) updateConfig("usageGuideSeen", true);
     setOpenPanel("keys");
   };
-  const resetKeys = () => {
+  const resetParameters = () => {
+    setConfig((current) => ({
+      ...structuredClone(defaultConfig),
+      hotkeys: current.hotkeys,
+      gameKeys: current.gameKeys,
+      overlayVisible: current.overlayVisible,
+      overlayOpacity: current.overlayOpacity,
+      usageGuideSeen: current.usageGuideSeen,
+    }));
+    setSelectedVector("first");
+  };
+  const resetKeyBindings = () => {
     updateConfig("hotkeys", structuredClone(defaultConfig.hotkeys));
     updateConfig("gameKeys", structuredClone(defaultConfig.gameKeys));
   };
@@ -396,6 +554,35 @@ export default function App() {
     ["superAbility", "超能", "F"],
     ["finisher", "终结技", "G"],
   ];
+  const updateBusy = ["downloading", "installing"].includes(updateNotice.phase);
+  const showUpdateNotice = ["available", "downloading", "installing"].includes(updateNotice.phase)
+    || Boolean(updateNotice.manual && ["checking", "current", "error"].includes(updateNotice.phase));
+  const updateProgress = updateNotice.total
+    ? Math.min(100, Math.round(((updateNotice.downloaded ?? 0) / updateNotice.total) * 100))
+    : undefined;
+  const updateNotes = updateNotice.notes?.replace(/\s+/g, " ").trim();
+  const updateTitle = updateNotice.phase === "checking"
+    ? "正在检查更新"
+    : updateNotice.phase === "current"
+      ? "当前已是最新版本"
+      : updateNotice.phase === "available"
+        ? `发现新版本 ${formatVersion(updateNotice.version ?? "")}`
+        : updateNotice.phase === "downloading"
+          ? `正在下载 ${formatVersion(updateNotice.version ?? "")}`
+          : updateNotice.phase === "installing"
+            ? "正在校验并安装更新"
+            : "更新检查未完成";
+  const updateMessage = updateNotice.message
+    ?? (updateNotice.phase === "checking"
+      ? "正在读取 GitHub Release 的 latest.json。"
+      : updateNotice.phase === "available"
+        ? updateNotes || "新版本已准备好，可以立即下载并安装。"
+        : updateNotice.phase === "downloading"
+          ? updateProgress === undefined ? "正在下载完整安装包…" : `安装包已下载 ${updateProgress}%`
+          : updateNotice.phase === "installing"
+            ? "输入已释放，安装程序接管后应用会自动退出并重新启动。"
+            : "当前版本不需要更新。"
+    );
 
   return (
     <div className="app-shell">
@@ -407,9 +594,9 @@ export default function App() {
         }}
       >
         <div className="brand-block" data-tauri-drag-region>
-          <img className="brand-mark" src={morgathLogo} alt="" aria-hidden="true" />
+          <img className="brand-mark" src={morgethLogo} alt="" aria-hidden="true" />
           <div>
-            <h1>Morgath Kick</h1>
+            <h1>Morgeth Kick</h1>
           </div>
         </div>
 
@@ -454,7 +641,7 @@ export default function App() {
           <button className="button secondary stop-button" type="button" onClick={() => runAction("stop")} disabled={!running}>
             <Icon name="stop" />停止 <kbd>{formatHotkey(config.hotkeys.stop)}</kbd>
           </button>
-          <button className="button primary" type="button" onClick={() => runAction("start")} disabled={running}>
+          <button className="button primary" type="button" onClick={() => runAction("start")} disabled={running || updateBusy} title={updateBusy ? "更新期间暂时不能启动动作" : undefined}>
             <Icon name="play" />启动 <kbd>{formatHotkey(config.hotkeys.start)}</kbd>
           </button>
           <div className="window-controls" aria-label="窗口控制">
@@ -466,6 +653,43 @@ export default function App() {
       </header>
 
       {error && <div className="error-banner" role="alert"><strong>操作未完成</strong><span>{error}</span><button type="button" onClick={() => setError(null)} aria-label="关闭错误提示">×</button></div>}
+      {showUpdateNotice && (
+        <section className={`update-banner ${updateNotice.phase}`} aria-live="polite" aria-label="应用更新">
+          <span className="update-mark" aria-hidden="true"><Icon name="refresh" /></span>
+          <div className="update-copy">
+            <strong>{updateTitle}</strong>
+            <span>{updateMessage}</span>
+            {updateNotice.phase === "available" && running && <small>动作序列正在运行，请先停止并等待输入释放后再更新。</small>}
+            {updateBusy && (
+              <div
+                className={`update-progress${updateProgress === undefined ? " indeterminate" : ""}`}
+                role="progressbar"
+                aria-label="更新进度"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={updateProgress}
+              >
+                <span style={updateProgress === undefined ? undefined : { width: `${updateProgress}%` }} />
+              </div>
+            )}
+          </div>
+          <div className="update-actions">
+            {updateNotice.phase === "available" && (
+              <>
+                <button className="text-button" type="button" onClick={skipAvailableUpdate}>跳过此版本</button>
+                <button className="button secondary" type="button" onClick={deferUpdate}>稍后提醒</button>
+                <button className="button primary" type="button" onClick={() => void installAvailableUpdate()} disabled={running} title={running ? "请先停止当前动作序列" : "下载并安装更新"}>立即更新</button>
+              </>
+            )}
+            {updateNotice.phase === "error" && (
+              <button className="button secondary" type="button" onClick={() => void checkForUpdates(true)}>重新检查</button>
+            )}
+            {["current", "error"].includes(updateNotice.phase) && (
+              <button className="text-button" type="button" onClick={() => setUpdateNotice({ phase: "idle" })}>关闭</button>
+            )}
+          </div>
+        </section>
+      )}
 
       <main>
         <nav className="workspace-tabs" aria-label="校准分组">
@@ -517,17 +741,24 @@ export default function App() {
           <section className={`calibration-column ${tab === "aim" ? "mobile-active" : ""}`} aria-labelledby="aim-title">
             <div className="column-heading">
               <span className="column-icon"><Icon name="target" /></span>
-              <div><h2 id="aim-title">瞄准偏移</h2><p>修正虚空箭落点与冲刺朝向。</p></div>
+              <div><h2 id="aim-title">瞄准偏移</h2><p>选择首次转向方式，再修正后续落点。</p></div>
             </div>
+            <div className="segment-control aim-mode-control" role="group" aria-label="首次转向模式">
+              <button type="button" className={usesAds ? "active" : ""} aria-pressed={usesAds} onClick={() => updateConfig("firstAimMode", "ads")}>ADS 转向</button>
+              <button type="button" className={!usesAds ? "active" : ""} aria-pressed={!usesAds} onClick={() => updateConfig("firstAimMode", "hipfire")}>腰射直投</button>
+            </div>
+            <p className="mode-note">{usesAds
+              ? "按住右键完成首次转向；需要无礼言论的 20 Zoom 作为校准基准。"
+              : "全程腰射完成首次转向并直接近战；使用普通视角灵敏度换算。"}</p>
             <AimPreview label={selectedPreview.label} value={selectedPreview.value} />
             <VectorEditor
-              title="首次 ADS"
-              description="近战前的主瞄准移动"
-              base={config.firstAdsBase}
-              applied={applied.firstAds}
-              onBaseChange={(value) => updateConfig("firstAdsBase", value)}
-              selected={selectedVector === "ads"}
-              onSelect={() => setSelectedVector("ads")}
+              title={firstAimLabel}
+              description={usesAds ? "按住右键时的近战前转向" : "腰射状态下转向后直接近战"}
+              base={usesAds ? config.firstAdsBase : config.firstHipBase}
+              applied={usesAds ? applied.firstAds : applied.firstHip}
+              onBaseChange={(value) => updateConfig(usesAds ? "firstAdsBase" : "firstHipBase", value)}
+              selected={selectedVector === "first"}
+              onSelect={() => setSelectedVector("first")}
             />
             <VectorEditor
               title="虚空箭落点"
@@ -558,8 +789,8 @@ export default function App() {
             </div>
             <div className="timing-list">
               <NumberField label="飞升后等待" value={config.timings.ascensionWait} min={0} max={10} step={0.05} unit="秒" onChange={(value) => updateTiming("ascensionWait", value)} hint={`${formatKey(config.gameKeys.ascension)} 飞升至后退定位`} />
-              <NumberField label="近战额外等待" value={config.timings.meleeExtraWait} min={0} max={5} step={0.05} unit="秒" onChange={(value) => updateTiming("meleeExtraWait", value)} hint={`ADS 到 ${formatKey(config.gameKeys.melee)} 近战前追加`} />
-              <NumberField label="ADS 至超能" value={config.timings.adsToSuperWait} min={0} max={10} step={0.05} unit="秒" onChange={(value) => updateTiming("adsToSuperWait", value)} hint="从按下 ADS 起计算" />
+              <NumberField label="近战额外等待" value={config.timings.meleeExtraWait} min={0} max={5} step={0.05} unit="秒" onChange={(value) => updateTiming("meleeExtraWait", value)} hint={`${firstAimLabel}到 ${formatKey(config.gameKeys.melee)} 近战前追加`} />
+              <NumberField label="首次转向至超能" value={config.timings.adsToSuperWait} min={0} max={10} step={0.05} unit="秒" onChange={(value) => updateTiming("adsToSuperWait", value)} hint="从首次转向阶段开始计算" />
               <NumberField label="超能后等待" value={config.timings.superWait} min={0} max={10} step={0.05} unit="秒" onChange={(value) => updateTiming("superWait", value)} hint={`${formatKey(config.gameKeys.superAbility)} 释放后至冲刺`} />
               <NumberField label="冲刺侧移时间" value={config.timings.sprintATime} min={0} max={3} step={0.01} unit="秒" onChange={(value) => updateTiming("sprintATime", value)} hint="A 先行按下时长" />
               <NumberField label="冲刺至终结" value={config.timings.sprintToFinisher} min={0} max={5} step={0.05} unit="秒" onChange={(value) => updateTiming("sprintToFinisher", value)} hint="镜头微调后附加" />
@@ -576,6 +807,10 @@ export default function App() {
         <div className="footer-actions">
           <button type="button" onClick={() => setOpenPanel("guide")}><Icon name="help" />使用说明</button>
           <button type="button" onClick={() => setOpenPanel("keys")}><Icon name="keyboard" />按键设置</button>
+          <button className="check-update-button" type="button" onClick={() => void checkForUpdates(true)} disabled={updateBusy || updateNotice.phase === "checking"} title={`当前版本 ${formatVersion(appVersion)}`}>
+            <Icon name="refresh" />{updateNotice.phase === "checking" ? "检查中" : "检查更新"}<small>{formatVersion(appVersion)}</small>
+          </button>
+          <button type="button" onClick={resetParameters} title="保留键位与悬浮窗设置"><Icon name="reset" />恢复默认参数</button>
         </div>
         <div className={`save-indicator ${saveState}`} aria-live="polite">
           <span />
@@ -588,8 +823,8 @@ export default function App() {
           <ol className="usage-steps">
             <li><span>1</span><div><strong>装备运动强化模组</strong><p>腿部护甲装备 3 个运动强化模组，近战属性推荐叠到 140。</p></div></li>
             <li><span>2</span><div><strong>使用指定棱镜配置</strong><p>装备棱镜分支职业，选择冰飞镖近战、虚空箭超能和飞升星相。</p></div></li>
-            <li><span>3</span><div><strong>装备指定武器</strong><p>二号位武器需选择无礼言论。</p></div></li>
-            <li><span>4</span><div><strong>同步游戏内设置</strong><p>调整软件设置中的视角灵敏度/瞄准灵敏度/视野范围与游戏内一致。</p></div></li>
+            <li><span>3</span><div><strong>确认首次转向模式</strong><p>{usesAds ? "ADS 转向模式下，二号位武器需选择无礼言论。" : "腰射直投模式下，二号位请使用保持第一人称视角的枪械，不要使用刀剑。"}</p></div></li>
+            <li><span>4</span><div><strong>同步游戏内设置</strong><p>调整软件设置中的视角灵敏度、视野范围{usesAds ? "和瞄准灵敏度" : ""}，确保与游戏内一致。</p></div></li>
             <li><span>5</span><div><strong>设置切换冲刺</strong><p>确保设置了切换冲刺的按键，游戏内和软件中的冲刺键需为切换冲刺。</p></div></li>
             <li><span>6</span><div><strong>保持角色与准星不动</strong><p>进入游戏后不要移动角色或挪动准星，直接按 <kbd>{formatHotkey(config.hotkeys.start)}</kbd> 启动。</p></div></li>
           </ol>
@@ -607,7 +842,7 @@ export default function App() {
           <section className="key-section" aria-labelledby="hotkey-settings-title">
             <div className="settings-section-heading">
               <div><h3 id="hotkey-settings-title">程序热键</h3><p>可组合 Ctrl、Shift、Alt 或 Win；启动与停止不能相同。</p></div>
-              <button className="text-button" type="button" onClick={resetKeys} disabled={running}><Icon name="reset" />恢复默认</button>
+              <button className="text-button" type="button" onClick={resetKeyBindings} disabled={running} title="仅恢复程序热键和游戏内操作键"><Icon name="reset" />恢复默认键位</button>
             </div>
             <div className="hotkey-grid">
               <HotkeyField label="启动流程" value={config.hotkeys.start} disabled={running} onChange={(value) => updateHotkey("start", value)} />
@@ -615,7 +850,7 @@ export default function App() {
             </div>
           </section>
           <section className="key-section" aria-labelledby="game-key-settings-title">
-            <div className="settings-section-heading"><div><h3 id="game-key-settings-title">游戏内操作</h3><p>WASD 固定用于移动，ADS 固定使用鼠标右键；冲刺键需对应游戏内“切换冲刺”。</p></div></div>
+            <div className="settings-section-heading"><div><h3 id="game-key-settings-title">游戏内操作</h3><p>WASD 固定用于移动；ADS 转向模式固定使用鼠标右键；冲刺键需对应游戏内“切换冲刺”。</p></div></div>
             <div className="game-key-grid">
               {gameKeyRows.map(([key, label, fallback]) => (
                 <label className="key-select-row" key={key}>

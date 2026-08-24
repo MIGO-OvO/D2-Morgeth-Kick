@@ -43,6 +43,8 @@ pub struct AppState {
     pub runtime: Mutex<RuntimeSnapshot>,
     pub running: AtomicBool,
     pub cancel: AtomicBool,
+    pub updating: AtomicBool,
+    transition: Mutex<()>,
 }
 
 impl AppState {
@@ -56,7 +58,42 @@ impl AppState {
             }),
             running: AtomicBool::new(false),
             cancel: AtomicBool::new(false),
+            updating: AtomicBool::new(false),
+            transition: Mutex::new(()),
         }
+    }
+
+    pub fn try_begin_sequence(&self) -> Result<(), &'static str> {
+        let _transition = self
+            .transition
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner());
+        if self.updating.load(Ordering::Acquire) {
+            return Err("正在下载或安装更新，暂时不能启动动作序列");
+        }
+        self.running
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .map(|_| ())
+            .map_err(|_| "动作序列已经在运行")
+    }
+
+    pub fn lock_for_update(&self) -> Result<bool, &'static str> {
+        let _transition = self
+            .transition
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner());
+        self.updating
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .map_err(|_| "更新已经在进行中")?;
+        Ok(self.running.load(Ordering::Acquire))
+    }
+
+    pub fn unlock_update(&self) {
+        let _transition = self
+            .transition
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner());
+        self.updating.store(false, Ordering::Release);
     }
 
     pub fn snapshot(&self) -> RuntimeSnapshot {
@@ -91,5 +128,32 @@ impl AppState {
                 runtime.message = "正在停止并释放按键…".into();
             }
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn update_lock_blocks_new_sequences_until_released() {
+        let state = AppState::new(AppConfig::default());
+
+        assert!(!state.lock_for_update().unwrap());
+        assert_eq!(
+            state.try_begin_sequence(),
+            Err("正在下载或安装更新，暂时不能启动动作序列")
+        );
+
+        state.unlock_update();
+        assert_eq!(state.try_begin_sequence(), Ok(()));
+    }
+
+    #[test]
+    fn update_lock_reports_an_active_sequence() {
+        let state = AppState::new(AppConfig::default());
+        state.try_begin_sequence().unwrap();
+
+        assert!(state.lock_for_update().unwrap());
     }
 }
