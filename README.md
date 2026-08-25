@@ -13,7 +13,7 @@
 
 D2 Morgeth Kick 是一款针对命运2的自动化获取征服战利品工具。它基于D2-Ogre-Kick项目重构，优化了底层架构，安装体积更小，具有可视化UI交互界面。
 
-[打开产品门户](https://migo-ovo.github.io/D2-Morgeth-Kick/) · [GitHub 下载 v0.3.3](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.3-Windows-x64-setup.exe) · [夸克网盘下载](https://pan.quark.cn/s/69e59cd59e04)
+[打开产品门户](https://migo-ovo.github.io/D2-Morgeth-Kick/) · [GitHub 下载 v0.3.4](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.4-Windows-x64-setup.exe) · [夸克网盘下载](https://pan.quark.cn/s/69e59cd59e04)
 
 反馈与交流：QQ群 **1104108070**
 
@@ -63,10 +63,10 @@ D2 Morgeth Kick 是一款针对命运2的自动化获取征服战利品工具。
 
 | 渠道 | 下载 | 说明 |
 | --- | --- | --- |
-| GitHub Release | [下载 v0.3.3 安装包](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.3-Windows-x64-setup.exe) | 官方发布与应用内更新来源 |
+| GitHub Release | [下载 v0.3.4 安装包](https://github.com/MIGO-OvO/D2-Morgeth-Kick/releases/latest/download/D2-Morgeth-Kick-v0.3.4-Windows-x64-setup.exe) | 官方发布与应用内更新来源 |
 | 夸克网盘 | [打开分享链接](https://pan.quark.cn/s/69e59cd59e04) | 手动下载备用渠道 |
 
-安装包文件名包含版本号：`D2-Morgeth-Kick-v0.3.3-Windows-x64-setup.exe`。运行安装程序后从开始菜单启动 D2 Morgeth Kick。
+安装包文件名包含版本号：`D2-Morgeth-Kick-v0.3.4-Windows-x64-setup.exe`。运行安装程序后从开始菜单启动 D2 Morgeth Kick。
 
 Windows 可能会在首次运行未签名安装包时显示 SmartScreen 提示。请核对下载地址是否属于本仓库，再决定是否继续。
 
@@ -115,7 +115,7 @@ v0.3.0 是第一个支持应用内更新的版本。从 v0.2.1 或更早版本�
 
 瞄点调整采用屏幕坐标：X 正值向右、负值向左；Y 正值向下、负值向上。Y 轴方向与数学直角坐标系相反。
 
-v0.3.3 的默认配置为“通用配枪”：腰射基准 `-1320, 30`，虚空箭基准 `-300, 81` 并微调 `-50, 0`，冲刺基准 `280, 0`。六项默认等待依次为 `1.5 / 0.3 / 2.5 / 1.9 / 0.1 / 0` 秒。已有设置不会被升级覆盖，可通过“恢复默认参数”应用这些值。
+v0.3.4 的默认配置为“无礼言论”：ADS 基准 `-2600, 50`，虚空箭基准 `-300, 81` 并微调 `-50, 0`，冲刺基准 `280, 0`。六项默认等待依次为 `1.5 / 0.3 / 2.5 / 1.9 / 0.1 / 0` 秒。已有设置不会被升级覆盖，可通过“恢复默认参数”应用这些值。
 
 视角灵敏度支持 1–100、步进 1；瞄准灵敏度支持 0.5–1.5、步进 0.1；视野范围支持 55–105、步进 1。
 

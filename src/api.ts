@@ -20,7 +20,7 @@ export const defaultConfig: AppConfig = {
   referenceLookSensitivity: 15,
   referenceAdsModifier: 1,
   referenceFieldOfView: 100,
-  firstAimMode: "hipfire",
+  firstAimMode: "ads",
   firstAdsBase: [-2600, 50],
   firstHipBase: [-1320, 30],
   voidArrowBase: [-300, 81],
@@ -180,8 +180,8 @@ export async function checkForAppUpdate(): Promise<AppUpdate | null> {
     if (!import.meta.env.DEV || !new URLSearchParams(window.location.search).has("mockUpdate")) return null;
     return {
       available: true,
-      currentVersion: "0.3.3",
-      version: "0.3.4",
+      currentVersion: "0.3.4",
+      version: "0.3.5",
       date: new Date().toISOString(),
       body: "改进更新提醒，并修复长时间运行时的状态同步。",
       rawJson: {},
@@ -192,7 +192,7 @@ export async function checkForAppUpdate(): Promise<AppUpdate | null> {
 }
 
 export async function getAppVersion(): Promise<string> {
-  return isTauri() ? getVersion() : "0.3.3";
+  return isTauri() ? getVersion() : "0.3.4";
 }
 
 export async function installAppUpdate(

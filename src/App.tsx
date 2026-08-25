@@ -211,7 +211,7 @@ function UsageGuide({ usesAds, startHotkey, onClose, onOpenKeys }: UsageGuidePro
           </section>
           <section className={!usesAds ? "current" : ""}>
             <span>02</span>
-            <div><strong>通用配枪</strong><p>使用腰射视角，可选择刀剑和轻质框架以外的枪械。</p></div>
+            <div><strong>通用配枪</strong><p>除<strong>刀剑/轻质框架</strong>（例如<strong>岁时之巅</strong>）以外的武器均可，腰射视角定位。</p></div>
             {!usesAds && <small>当前模式</small>}
           </section>
           <div className="guide-callout"><strong>启动前保持不动</strong><p>进入游戏后不要移动人物或鼠标，直接按 <kbd>{startHotkey}</kbd> 启动程序。</p></div>
@@ -242,6 +242,7 @@ function UsageGuide({ usesAds, startHotkey, onClose, onOpenKeys }: UsageGuidePro
       content: (
         <dl className="guide-faq">
           <div><dt>人物没跑到位置就停</dt><dd>确认游戏内已设置“切换冲刺”，并与软件按键映射一致。</dd></div>
+          <div><dt>飞升后后退过多等移动问题</dt><dd>检查是否装备了轻质框架武器和强化移动金装。</dd></div>
           <div><dt>虚空箭或冰飞镖偏得很远</dt><dd>确认软件与游戏的灵敏度一致，并检查执行方式是否与二号位武器匹配。</dd></div>
           <div><dt>无法终结或 BOSS 跺脚</dt><dd>微调近战、超能间隔和虚空箭落点，使飞镖与冲刺终结落在正确时机。</dd></div>
         </dl>
@@ -476,22 +477,30 @@ function VectorEditor({
   );
 }
 
-function AimPreview({ label, value }: { label: string; value: [number, number] }) {
-  const clamp = (input: number) => Math.max(-1, Math.min(1, input));
-  const x2 = 80 + clamp(value[0] / 600) * 48;
-  const y2 = 50 + clamp(value[1] / 180) * 30;
+function AimPreview({ label, reference, value }: { label: string; reference: [number, number]; value: [number, number] }) {
+  const delta: [number, number] = [value[0] - reference[0], value[1] - reference[1]];
+  const clamp = (input: number, min: number, max: number) => Math.max(min, Math.min(max, input));
+  const x2 = clamp(80 + delta[0] / 20, 18, 142);
+  const y2 = clamp(52 + delta[1] / 20, 14, 88);
+  const signed = (input: number) => input > 0 ? `+${input}` : `${input}`;
   return (
     <figure className="aim-preview">
       <figcaption>
-        <span>{label}</span>
-        <strong>X {value[0]} · Y {value[1]}</strong>
+        <span>{label}微调预览</span>
+        <strong>ΔX {signed(delta[0])} · ΔY {signed(delta[1])}</strong>
       </figcaption>
-      <svg viewBox="0 0 160 100" role="img" aria-label={`${label}方向预览`}>
-        <path className="preview-grid" d="M16 50h128M80 10v80" />
-        <circle className="preview-ring" cx="80" cy="50" r="24" />
-        <path className="preview-vector" d={`M80 50 L${x2} ${y2}`} />
+      <svg viewBox="0 0 160 104" role="img" aria-label={`${label}默认落点到调整后落点，X 偏移 ${delta[0]}，Y 偏移 ${delta[1]}`}>
+        <path className="preview-grid" d="M16 52h128M80 12v80" />
+        <circle className="preview-ring" cx="80" cy="52" r="28" />
+        <path className="preview-vector" d={`M80 52 L${x2} ${y2}`} />
+        <circle className="preview-reference" cx="80" cy="52" r="6" />
         <circle className="preview-point" cx={x2} cy={y2} r="4" />
       </svg>
+      <div className="preview-legend" title="预览比例：每 20 个鼠标计数显示 1 px">
+        <span><i className="reference" />默认落点</span>
+        <span><i className="current" />调整后</span>
+        <small>当前 {value[0]}, {value[1]} · 20:1</small>
+      </div>
     </figure>
   );
 }
@@ -506,7 +515,7 @@ export default function App() {
   const [selectedVector, setSelectedVector] = useState<"first" | "void" | "sprint">("void");
   const [theme, setTheme] = useState<Theme>(resolveTheme);
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
-  const [appVersion, setAppVersion] = useState("0.3.3");
+  const [appVersion, setAppVersion] = useState("0.3.4");
   const [updateNotice, setUpdateNotice] = useState<UpdateNotice>({ phase: "idle" });
   const readyRef = useRef(false);
   const pendingUpdateRef = useRef<AppUpdate | null>(null);
@@ -727,11 +736,20 @@ export default function App() {
     : resolution ? `${resolution.width} × ${resolution.height}` : "检测中";
   const usesAds = config.firstAimMode === "ads";
   const firstAimLabel = usesAds ? "ADS 转向" : "腰射转向";
+  const defaultApplied = calculateAppliedOffsets({
+    ...config,
+    firstAdsBase: defaultConfig.firstAdsBase,
+    firstHipBase: defaultConfig.firstHipBase,
+    voidArrowBase: defaultConfig.voidArrowBase,
+    voidArrowTrim: defaultConfig.voidArrowTrim,
+    sprintBase: defaultConfig.sprintBase,
+    sprintTrim: defaultConfig.sprintTrim,
+  });
   const selectedPreview = selectedVector === "first"
-    ? { label: firstAimLabel, value: usesAds ? applied.firstAds : applied.firstHip }
+    ? { label: firstAimLabel, reference: usesAds ? defaultApplied.firstAds : defaultApplied.firstHip, value: usesAds ? applied.firstAds : applied.firstHip }
     : selectedVector === "void"
-      ? { label: "虚空箭", value: applied.voidArrow }
-      : { label: "冲刺", value: applied.sprint };
+      ? { label: "虚空箭", reference: defaultApplied.voidArrow, value: applied.voidArrow }
+      : { label: "冲刺", reference: defaultApplied.sprint, value: applied.sprint };
   const runtimeMessage = snapshot.status === "ready"
     ? `参数已就绪，按 ${formatHotkey(config.hotkeys.start)} 启动`
     : running ? snapshot.phaseName : snapshot.message;
@@ -971,7 +989,7 @@ export default function App() {
             </div>
             <div className="aim-editor-grid">
               <div className="aim-context">
-                <AimPreview label={selectedPreview.label} value={selectedPreview.value} />
+                <AimPreview label={selectedPreview.label} reference={selectedPreview.reference} value={selectedPreview.value} />
               </div>
               <VectorEditor
                 title={firstAimLabel}

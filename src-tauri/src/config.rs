@@ -235,7 +235,7 @@ impl Default for AppConfig {
             reference_look_sensitivity: 15.0,
             reference_ads_modifier: 1.0,
             reference_field_of_view: 100.0,
-            first_aim_mode: FirstAimMode::Hipfire,
+            first_aim_mode: FirstAimMode::Ads,
             first_ads_base: [-2600, 50],
             first_hip_base: [-1320, 30],
             void_arrow_base: [-300, 81],
@@ -375,7 +375,7 @@ mod tests {
     #[test]
     fn default_offsets_match_calibrated_reference() {
         let config = AppConfig::default();
-        assert_eq!(config.first_aim_mode, FirstAimMode::Hipfire);
+        assert_eq!(config.first_aim_mode, FirstAimMode::Ads);
         assert_eq!(config.first_ads_offset(), [-2600, 50]);
         assert_eq!(config.first_hip_offset(), [-1320, 30]);
         assert_eq!(config.void_arrow_offset(), [-350, 81]);
@@ -445,7 +445,7 @@ mod tests {
         assert_eq!(config.look_sensitivity, 10.0);
         assert_eq!(config.field_of_view, 100.0);
         assert_eq!(config.reference_field_of_view, 100.0);
-        assert_eq!(config.first_aim_mode, FirstAimMode::Hipfire);
+        assert_eq!(config.first_aim_mode, FirstAimMode::Ads);
         assert_eq!(config.first_hip_base, [-1320, 30]);
         assert!(config.validate().is_ok());
     }

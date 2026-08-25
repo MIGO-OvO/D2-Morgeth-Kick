@@ -265,13 +265,21 @@ main { width: 100%; max-width: 1500px; min-height: 0; flex: 1; margin: 0 auto; p
 .scale-readout strong { color: var(--blue); font-size: 15px; font-variant-numeric: tabular-nums; }
 .info-note { margin: 12px 0 0; padding: 9px 10px; border-radius: 6px; background: var(--surface-note); color: var(--text-muted); font-size: 11px; line-height: 1.55; }
 .aim-preview { margin: 14px 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-subtle); overflow: hidden; }
-.aim-preview figcaption { display: flex; justify-content: space-between; padding: 9px 11px 0; color: var(--text-soft); font-size: 11px; }
-.aim-preview figcaption strong { color: var(--text); font-variant-numeric: tabular-nums; }
-.aim-preview svg { display: block; width: 100%; height: 82px; }
+.aim-preview figcaption { display: flex; justify-content: space-between; gap: 8px; padding: 9px 11px 0; color: var(--text-soft); font-size: 11px; }
+.aim-preview figcaption > span { min-width: 0; }
+.aim-preview figcaption strong { flex: none; color: var(--blue); font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.aim-preview svg { display: block; width: 100%; height: 76px; }
 .preview-grid { fill: none; stroke: var(--preview-line); stroke-width: 1; stroke-dasharray: 3 4; }
 .preview-ring { fill: none; stroke: var(--line-strong); stroke-width: 1; }
-.preview-vector { fill: none; stroke: var(--blue); stroke-width: 2; }
+.preview-vector { fill: none; stroke: var(--blue); stroke-width: 2; stroke-linecap: round; }
+.preview-reference { fill: var(--surface-subtle); stroke: var(--text-muted); stroke-width: 1.5; }
 .preview-point { fill: var(--blue); stroke: var(--surface); stroke-width: 2; }
+.preview-legend { display: flex; align-items: center; gap: 12px; padding: 0 11px 9px; color: var(--text-soft); font-size: 10px; }
+.preview-legend span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.preview-legend i { width: 7px; height: 7px; border-radius: 50%; }
+.preview-legend i.reference { border: 1.5px solid var(--text-muted); background: var(--surface-subtle); }
+.preview-legend i.current { background: var(--blue); }
+.preview-legend small { margin-left: auto; color: var(--text-muted); font-family: var(--font-mono); font-size: 9px; white-space: nowrap; }
 .vector-card { margin-top: 9px; padding: 11px; border: 1px solid var(--line); border-radius: var(--radius-sm); transition: border-color 150ms ease, background-color 150ms ease; }
 .vector-card:hover { border-color: var(--vector-line); }
 .vector-card.selected { border-color: var(--line-selected); background: var(--surface-selected); }
@@ -338,9 +346,9 @@ main { width: 100%; max-width: 1500px; min-height: 0; flex: 1; margin: 0 auto; p
 .guide-feature-list section > span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 6px; background: var(--blue-soft); color: var(--blue); font-size: .75rem; font-weight: 750; }
 .guide-feature-list small { display: block; margin-top: 10px; color: var(--text-muted); font-size: .875rem; line-height: 1.5; text-wrap: pretty; }
 .guide-faq { margin: 0; }
-.guide-faq > div { display: grid; grid-template-columns: minmax(150px, .72fr) minmax(0, 1.28fr); gap: 18px; padding: 13px 0; border-bottom: 1px solid var(--line); }
-.guide-faq dt { font-size: 1rem; line-height: 1.4; font-weight: 700; }
-.guide-faq dd { max-width: 65ch; margin: 0; color: var(--text-soft); font-size: 1rem; line-height: 1.6; text-wrap: pretty; }
+.guide-faq > div { display: grid; grid-template-columns: 205px minmax(0, 1fr); gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.guide-faq dt { font-size: .875rem; line-height: 1.45; font-weight: 700; }
+.guide-faq dd { margin: 0; color: var(--text-soft); font-size: .875rem; line-height: 1.45; white-space: nowrap; }
 .guide-final { max-width: 470px; margin: 34px auto 0; text-align: center; }
 .guide-final-mark { width: 42px; height: 42px; display: grid; place-items: center; margin: 0 auto 12px; border-radius: 50%; background: var(--blue-soft); color: var(--blue); }
 .guide-final-mark .icon { width: 20px; height: 20px; }
@@ -464,6 +472,7 @@ main { width: 100%; max-width: 1500px; min-height: 0; flex: 1; margin: 0 auto; p
   .guide-page { min-height: 0; }
   .guide-checklist, .guide-feature-list { grid-template-columns: 1fr; }
   .guide-faq > div { grid-template-columns: 1fr; gap: 4px; }
+  .guide-faq dd { white-space: normal; }
   .guide-actions { flex-wrap: wrap; }
   .guide-actions > span { display: none; }
   .guide-actions > div { margin-left: auto; }
