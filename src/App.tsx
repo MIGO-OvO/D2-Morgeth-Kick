@@ -15,11 +15,13 @@ import {
   defaultConfig,
   defaultRuntime,
   detectResolution,
+  errorText,
   getAppVersion,
   getConfig,
   getRuntimeSnapshot,
   installAppUpdate,
   minimizeWindow,
+  nativePing,
   onRuntimeState,
   saveConfig,
   setHotkeyCaptureActive,
@@ -29,8 +31,11 @@ import {
   type AppUpdate,
   type AppUpdateDownloadEvent,
 } from "./api";
+import DiagnosticsPanel from "./DiagnosticsPanel";
+import { Icon } from "./icon";
 import type {
   AppConfig,
+  BackendHandshakeState,
   GameKeyConfig,
   HotkeyConfig,
   ResolutionInfo,
@@ -54,7 +59,7 @@ import morgethLogo from "../portal/morgeth-logo.png";
 
 type WorkspaceTab = "display" | "aim" | "timing";
 type SaveState = "idle" | "saving" | "saved" | "error";
-type OpenPanel = "guide" | "keys" | null;
+type OpenPanel = "guide" | "keys" | "diagnostics" | null;
 type UpdatePhase = "idle" | "checking" | "current" | "available" | "downloading" | "installing" | "error";
 
 interface UpdateNotice {
@@ -118,34 +123,16 @@ const statusLabels: Record<RuntimeStatus, string> = {
   error: "发生错误",
 };
 
-function Icon({ name }: { name: "play" | "stop" | "display" | "target" | "clock" | "refresh" | "sun" | "moon" | "help" | "keyboard" | "close" | "reset" | "minimize" }) {
-  const paths: Record<typeof name, ReactNode> = {
-    play: <path d="m9 7 8 5-8 5V7Z" />,
-    stop: <path d="M8 8h8v8H8z" />,
-    display: <><rect x="3" y="5" width="18" height="12" rx="2" /><path d="M8 21h8M12 17v4" /></>,
-    target: <><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2" /><path d="M12 2v3m0 14v3M2 12h3m14 0h3" /></>,
-    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
-    refresh: <><path d="M20 7v5h-5" /><path d="M18.5 16a7 7 0 1 1 .2-8.2L20 12" /></>,
-    sun: <><circle cx="12" cy="12" r="3.5" /><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
-    moon: <path d="M20 15.2A8.5 8.5 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z" />,
-    help: <><circle cx="12" cy="12" r="9" /><path d="M9.8 9a2.3 2.3 0 0 1 4.4 1c0 1.8-2.2 2-2.2 3.7M12 17.5h.01" /></>,
-    keyboard: <><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M7 10h.01M11 10h.01M15 10h.01M18 10h.01M7 14h7m2 0h2" /></>,
-    close: <path d="m7 7 10 10M17 7 7 17" />,
-    reset: <><path d="M4 4v6h6" /><path d="M5.5 15a7 7 0 1 0 .2-8.2L4 10" /></>,
-    minimize: <path d="M6 16h12" />,
-  };
-  return <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>;
-}
-
 interface AppDialogProps {
   title: string;
   description: string;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  className?: string;
 }
 
-function AppDialog({ title, description, onClose, children, wide = false }: AppDialogProps) {
+function AppDialog({ title, description, onClose, children, wide = false, className }: AppDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -156,7 +143,7 @@ function AppDialog({ title, description, onClose, children, wide = false }: AppD
   return (
     <dialog
       ref={dialogRef}
-      className={`app-dialog${wide ? " wide" : ""}`}
+      className={`app-dialog${wide ? " wide" : ""}${className ? ` ${className}` : ""}`}
       aria-labelledby="dialog-title"
       aria-describedby="dialog-description"
       onCancel={(event) => { event.preventDefault(); onClose(); }}
@@ -515,8 +502,10 @@ export default function App() {
   const [selectedVector, setSelectedVector] = useState<"first" | "void" | "sprint">("void");
   const [theme, setTheme] = useState<Theme>(resolveTheme);
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
-  const [appVersion, setAppVersion] = useState("0.3.4");
+  const [appVersion, setAppVersion] = useState("0.3.5");
   const [updateNotice, setUpdateNotice] = useState<UpdateNotice>({ phase: "idle" });
+  const [backend, setBackend] = useState<BackendHandshakeState>({ status: "checking" });
+  const [lastRuntimeError, setLastRuntimeError] = useState<string | null>(null);
   const readyRef = useRef(false);
   const pendingUpdateRef = useRef<AppUpdate | null>(null);
   const checkingUpdateRef = useRef(false);
@@ -579,6 +568,23 @@ export default function App() {
   useEffect(() => {
     let unlisten: (() => void) | undefined;
     void getAppVersion().then(setAppVersion).catch(() => undefined);
+    // 原生后端握手：正式构建中失败（例如脱离 Tauri 运行）会禁用动作执行，
+    // 绝不静默进入前端模拟模式。
+    const pingStarted = performance.now();
+    nativePing()
+      .then((ping) => {
+        setBackend({
+          status: "ok",
+          ping,
+          latencyMs: Math.round(performance.now() - pingStarted),
+        });
+      })
+      .catch((reason: unknown) => {
+        const message = errorText(reason);
+        console.error("Native backend handshake failed", reason);
+        setBackend({ status: "unavailable", message });
+        setError(message);
+      });
     Promise.all([getConfig(), getRuntimeSnapshot(), detectResolution()])
       .then(([nextConfig, nextSnapshot, nextResolution]) => {
         setConfig(nextConfig);
@@ -589,9 +595,17 @@ export default function App() {
       })
       .catch((reason: unknown) => {
         console.error("Failed to initialize the app", reason);
-        setError("启动时没能读到设置或游戏窗口。请确认 Destiny 2 已启动，然后重新打开程序。");
+        setError(errorText(reason) || "启动时没能读到设置或游戏窗口。请确认 Destiny 2 已启动，然后重新打开程序。");
       });
-    onRuntimeState(setSnapshot).then((dispose) => { unlisten = dispose; });
+    onRuntimeState((next) => {
+      setSnapshot(next);
+      // runtime-state 返回 error 时自动保留完整原始错误：
+      // 顶部状态栏可以省略显示，但完整错误始终保留在横幅与诊断面板中。
+      if (next.status === "error" && next.message) {
+        setLastRuntimeError(next.message);
+        setError(next.message);
+      }
+    }).then((dispose) => { unlisten = dispose; });
     return () => unlisten?.();
   }, []);
 
@@ -713,6 +727,10 @@ export default function App() {
   };
 
   const runAction = async (action: "start" | "stop") => {
+    if (backend.status !== "ok") {
+      setError(backend.message ?? "原生后端不可用：握手未完成，动作执行已禁用。");
+      return;
+    }
     try {
       setError(null);
       if (action === "start") {
@@ -725,9 +743,10 @@ export default function App() {
       }
     } catch (reason) {
       console.error(`Failed to ${action} the sequence`, reason);
-      setError(action === "start"
-        ? "动作没有启动。请确认游戏和本程序使用相同的 Windows 完整性级别，再试一次。"
-        : "停止请求没有完成。请松开相关键位并退出程序，再重新打开。");
+      // 保留后端返回的完整原始错误，不再替换为通用提示。
+      const message = errorText(reason);
+      if (action === "start") setLastRuntimeError(message);
+      setError(message);
     }
   };
 
@@ -864,10 +883,10 @@ export default function App() {
               />
             </label>
           </div>
-          <button className="button secondary stop-button" type="button" onClick={() => runAction("stop")} disabled={!running}>
+          <button className="button secondary stop-button" type="button" onClick={() => runAction("stop")} disabled={!running || backend.status !== "ok"} title={backend.status !== "ok" ? "原生后端不可用，停止动作已禁用" : undefined}>
             <Icon name="stop" />停止 <kbd>{formatHotkey(config.hotkeys.stop)}</kbd>
           </button>
-          <button className="button primary" type="button" onClick={() => runAction("start")} disabled={running || updateBusy} title={updateBusy ? "更新期间暂时不能启动动作" : undefined}>
+          <button className="button primary" type="button" onClick={() => runAction("start")} disabled={running || updateBusy || backend.status !== "ok"} title={backend.status !== "ok" ? backend.message ?? "原生后端握手未完成" : updateBusy ? "更新期间暂时不能启动动作" : undefined}>
             <Icon name="play" />启动 <kbd>{formatHotkey(config.hotkeys.start)}</kbd>
           </button>
           <div className="window-controls" aria-label="窗口控制">
@@ -877,7 +896,7 @@ export default function App() {
         </div>
       </header>
 
-      {error && <div className="error-banner" role="alert"><strong>操作未完成</strong><span>{error}</span><button type="button" onClick={() => setError(null)} aria-label="关闭错误提示">×</button></div>}
+      {error && <div className="error-banner" role="alert"><strong>操作未完成</strong><span>{error}</span><button className="text-button error-copy" type="button" onClick={() => void navigator.clipboard?.writeText(error).catch(() => undefined)} title="复制完整错误">复制</button><button type="button" onClick={() => setError(null)} aria-label="关闭错误提示">×</button></div>}
       {showUpdateNotice && (
         <section className={`update-banner ${updateNotice.phase}`} aria-live="polite" aria-label="应用更新">
           <span className="update-mark" aria-hidden="true"><Icon name="refresh" /></span>
@@ -1044,6 +1063,7 @@ export default function App() {
         <div className="footer-actions">
           <button type="button" onClick={() => setOpenPanel("guide")}><Icon name="help" />使用说明</button>
           <button type="button" onClick={() => setOpenPanel("keys")}><Icon name="keyboard" />按键设置</button>
+          <button type="button" onClick={() => setOpenPanel("diagnostics")} title="后端、热键、输入与环境自检，支持导出诊断包"><Icon name="pulse" />诊断</button>
           <button className="check-update-button" type="button" onClick={() => void checkForUpdates(true)} disabled={updateBusy || updateNotice.phase === "checking"} title={`当前版本 ${formatVersion(appVersion)}`}>
             <Icon name="refresh" />{updateNotice.phase === "checking" ? "检查中" : "检查更新"}<small>{formatVersion(appVersion)}</small>
           </button>
@@ -1089,6 +1109,23 @@ export default function App() {
             </div>
           </section>
           <div className="dialog-actions"><button className="button primary" type="button" onClick={() => setOpenPanel(null)}>完成</button></div>
+        </AppDialog>
+      )}
+
+      {openPanel === "diagnostics" && (
+        <AppDialog
+          title="诊断面板"
+          description="原生后端、全局热键、SendInput 主动输入与环境自检；支持复制原始错误并导出 ZIP 诊断包。"
+          onClose={() => setOpenPanel(null)}
+          wide
+          className="diag-dialog"
+        >
+          <DiagnosticsPanel
+            backend={backend}
+            lastRuntimeError={lastRuntimeError}
+            onBackendState={setBackend}
+            onClose={() => setOpenPanel(null)}
+          />
         </AppDialog>
       )}
     </div>

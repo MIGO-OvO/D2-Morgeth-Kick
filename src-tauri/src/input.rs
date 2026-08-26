@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KeyboardInput {
     pub scan_code: u16,
@@ -43,18 +45,85 @@ pub const KEY_A: InputBinding = InputBinding::Keyboard(KeyboardInput::standard(0
 pub const KEY_S: InputBinding = InputBinding::Keyboard(KeyboardInput::standard(0x1f));
 pub const KEY_D: InputBinding = InputBinding::Keyboard(KeyboardInput::standard(0x20));
 
+/// 单次主动输入自检（SendInput 探针）的结果。
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct InputProbeResult {
+    /// scan-code-w | virtual-key-w | mouse-relative
+    pub probe: String,
+    pub label: String,
+    pub description: String,
+    pub ok: bool,
+    /// 计划发起的 SendInput 请求数（事件数）。
+    pub requested: u32,
+    /// 实际调用 SendInput 的次数。
+    pub calls: u32,
+    /// SendInput 返回值之和（成功注入的事件数）。
+    pub sent: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_error_code: Option<u32>,
+    /// 原始 LastError（系统消息 + 错误码）。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub foreground_process: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub integrity_level: Option<String>,
+    /// W 类探针：按下后观察到的 GetAsyncKeyState 状态（仅供参考，不参与判定）。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub observed_async_down: Option<bool>,
+    pub duration_ms: u64,
+    pub timestamp: String,
+}
+
+/// SendInput 调用累计器：与平台无关，便于单元测试。
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SendOutcome {
+    pub requested: u32,
+    pub calls: u32,
+    pub sent: u32,
+    pub last_error_code: Option<u32>,
+}
+
+impl SendOutcome {
+    pub fn record_call(&mut self, sent: u32, error_code: u32) {
+        self.calls += 1;
+        self.sent += sent;
+        if sent != 1 && self.last_error_code.is_none() && error_code != 0 {
+            self.last_error_code = Some(error_code);
+        }
+    }
+
+    pub fn ok(&self) -> bool {
+        self.calls == self.requested
+            && self.sent == self.requested
+            && self.last_error_code.is_none()
+    }
+}
+
+/// 依次运行三种主动输入自检：扫描码 W、虚拟键 W、相对鼠标移动。
+/// 注意：探针会向前台窗口注入一次极短 W 按键与 ±1 像素的鼠标移动，
+/// 因此仅由用户在诊断面板中显式触发。
+pub fn run_probes() -> Vec<InputProbeResult> {
+    platform::run_probes()
+}
+
 #[cfg(windows)]
 mod platform {
     use std::mem::size_of;
+    use windows_sys::Win32::Foundation::GetLastError;
     use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
         GetAsyncKeyState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE, KEYBDINPUT,
         KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, MOUSEEVENTF_MIDDLEDOWN,
         MOUSEEVENTF_MIDDLEUP, MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP,
         MOUSEEVENTF_XDOWN, MOUSEEVENTF_XUP, MOUSEINPUT, VK_CONTROL, VK_LWIN, VK_MBUTTON, VK_MENU,
-        VK_RWIN, VK_SHIFT, VK_XBUTTON1, VK_XBUTTON2,
+        VK_RWIN, VK_SHIFT, VK_W, VK_XBUTTON1, VK_XBUTTON2,
     };
 
-    use super::{KeyboardInput, MouseButton, MOD_ALT, MOD_CONTROL, MOD_SHIFT, MOD_SUPER};
+    use super::{
+        KeyboardInput, MouseButton, SendOutcome, MOD_ALT, MOD_CONTROL, MOD_SHIFT, MOD_SUPER,
+    };
+    use crate::system;
 
     fn send(input: &INPUT) -> Result<(), String> {
         let sent = unsafe { SendInput(1, input, size_of::<INPUT>() as i32) };
@@ -66,6 +135,149 @@ mod platform {
                 std::io::Error::last_os_error()
             ))
         }
+    }
+
+    fn send_raw(input: &INPUT) -> (u32, u32) {
+        let sent = unsafe { SendInput(1, input, size_of::<INPUT>() as i32) };
+        (sent, unsafe { GetLastError() })
+    }
+
+    fn keyboard_input(scan_code: u16, virtual_key: u16, flags: u32) -> INPUT {
+        INPUT {
+            r#type: INPUT_KEYBOARD,
+            Anonymous: INPUT_0 {
+                ki: KEYBDINPUT {
+                    wVk: virtual_key,
+                    wScan: scan_code,
+                    dwFlags: flags,
+                    time: 0,
+                    dwExtraInfo: 0,
+                },
+            },
+        }
+    }
+
+    fn async_down(virtual_key: u16) -> bool {
+        unsafe { GetAsyncKeyState(i32::from(virtual_key)) as u16 & 0x8000 != 0 }
+    }
+
+    fn probe_result(
+        probe: &str,
+        label: &str,
+        description: &str,
+        outcome: SendOutcome,
+        started: std::time::Instant,
+        observed: Option<bool>,
+    ) -> super::InputProbeResult {
+        super::InputProbeResult {
+            probe: probe.into(),
+            label: label.into(),
+            description: description.into(),
+            ok: outcome.ok(),
+            requested: outcome.requested,
+            calls: outcome.calls,
+            sent: outcome.sent,
+            last_error_code: outcome.last_error_code,
+            last_error: outcome.last_error_code.map(system::win32_error_message),
+            foreground_process: system::foreground_process_name(),
+            integrity_level: system::foreground_integrity_level(),
+            observed_async_down: observed,
+            duration_ms: started.elapsed().as_millis() as u64,
+            timestamp: crate::diagnostics::iso8601_now(),
+        }
+    }
+
+    /// 探针 1：扫描码 W（KEYEVENTF_SCANCODE + 0x11）。
+    fn probe_scan_code_w() -> super::InputProbeResult {
+        let started = std::time::Instant::now();
+        let mut outcome = SendOutcome {
+            requested: 2,
+            ..SendOutcome::default()
+        };
+        let down = keyboard_input(0x11, 0, KEYEVENTF_SCANCODE);
+        let (sent, error_code) = send_raw(&down);
+        outcome.record_call(sent, error_code);
+        std::thread::sleep(std::time::Duration::from_millis(40));
+        let observed = async_down(VK_W);
+        let up = keyboard_input(0x11, 0, KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP);
+        let (sent, error_code) = send_raw(&up);
+        outcome.record_call(sent, error_code);
+        probe_result(
+            "scan-code-w",
+            "扫描码 W",
+            "KEYEVENTF_SCANCODE 注入 W（0x11）按下与抬起",
+            outcome,
+            started,
+            Some(observed),
+        )
+    }
+
+    /// 探针 2：虚拟键 W（wVk=0x57，不带扫描码标志）。
+    fn probe_virtual_key_w() -> super::InputProbeResult {
+        let started = std::time::Instant::now();
+        let mut outcome = SendOutcome {
+            requested: 2,
+            ..SendOutcome::default()
+        };
+        let down = keyboard_input(0, VK_W, 0);
+        let (sent, error_code) = send_raw(&down);
+        outcome.record_call(sent, error_code);
+        std::thread::sleep(std::time::Duration::from_millis(40));
+        let observed = async_down(VK_W);
+        let up = keyboard_input(0, VK_W, KEYEVENTF_KEYUP);
+        let (sent, error_code) = send_raw(&up);
+        outcome.record_call(sent, error_code);
+        probe_result(
+            "virtual-key-w",
+            "虚拟键 W",
+            "wVk=0x57 虚拟键注入 W 按下与抬起",
+            outcome,
+            started,
+            Some(observed),
+        )
+    }
+
+    /// 探针 3：相对鼠标移动（+1,0 再 -1,0，净位移为零）。
+    fn probe_mouse_relative() -> super::InputProbeResult {
+        let started = std::time::Instant::now();
+        let mut outcome = SendOutcome {
+            requested: 2,
+            ..SendOutcome::default()
+        };
+        let input = |dx: i32| INPUT {
+            r#type: INPUT_MOUSE,
+            Anonymous: INPUT_0 {
+                mi: MOUSEINPUT {
+                    dx,
+                    dy: 0,
+                    mouseData: 0,
+                    dwFlags: MOUSEEVENTF_MOVE,
+                    time: 0,
+                    dwExtraInfo: 0,
+                },
+            },
+        };
+        let (sent, error_code) = send_raw(&input(1));
+        outcome.record_call(sent, error_code);
+        std::thread::sleep(std::time::Duration::from_millis(30));
+        let (sent, error_code) = send_raw(&input(-1));
+        outcome.record_call(sent, error_code);
+        probe_result(
+            "mouse-relative",
+            "相对鼠标移动",
+            "MOUSEEVENTF_MOVE 相对移动 (+1,0) 与 (-1,0)，净位移为零",
+            outcome,
+            started,
+            None,
+        )
+    }
+
+    pub fn run_probes() -> Vec<super::InputProbeResult> {
+        vec![
+            probe_scan_code_w(),
+            probe_virtual_key_w(),
+            probe_mouse_relative(),
+        ]
     }
 
     fn mouse(flags: u32, data: u32) -> Result<(), String> {
@@ -196,6 +408,29 @@ mod platform {
     }
     pub fn modifier_mask() -> u8 {
         0
+    }
+    pub fn run_probes() -> Vec<super::InputProbeResult> {
+        let probe = |probe: &str, label: &str| super::InputProbeResult {
+            probe: probe.into(),
+            label: label.into(),
+            description: "键鼠输入自检仅支持 Windows".into(),
+            ok: false,
+            requested: 2,
+            calls: 0,
+            sent: 0,
+            last_error_code: None,
+            last_error: Some("键鼠输入自检仅支持 Windows".into()),
+            foreground_process: None,
+            integrity_level: None,
+            observed_async_down: None,
+            duration_ms: 0,
+            timestamp: crate::diagnostics::iso8601_now(),
+        };
+        vec![
+            probe("scan-code-w", "扫描码 W"),
+            probe("virtual-key-w", "虚拟键 W"),
+            probe("mouse-relative", "相对鼠标移动"),
+        ]
     }
 }
 
@@ -357,5 +592,91 @@ mod tests {
     #[test]
     fn unknown_browser_codes_are_rejected() {
         assert_eq!(binding("BrowserBack"), None);
+    }
+
+    #[test]
+    fn send_outcome_is_ok_only_when_every_request_succeeds() {
+        let mut outcome = SendOutcome {
+            requested: 2,
+            ..SendOutcome::default()
+        };
+        outcome.record_call(1, 0);
+        outcome.record_call(1, 0);
+        assert_eq!(outcome.calls, 2);
+        assert_eq!(outcome.sent, 2);
+        assert_eq!(outcome.last_error_code, None);
+        assert!(outcome.ok());
+    }
+
+    #[test]
+    fn send_outcome_keeps_first_error_code_and_fails() {
+        let mut outcome = SendOutcome {
+            requested: 2,
+            ..SendOutcome::default()
+        };
+        outcome.record_call(1, 0);
+        outcome.record_call(0, 5);
+        outcome.record_call(0, 998);
+        assert_eq!(outcome.calls, 3);
+        assert_eq!(outcome.sent, 1);
+        assert_eq!(outcome.last_error_code, Some(5));
+        assert!(!outcome.ok());
+    }
+
+    #[test]
+    fn send_outcome_with_zero_error_code_is_not_a_failure() {
+        let mut outcome = SendOutcome {
+            requested: 2,
+            ..SendOutcome::default()
+        };
+        outcome.record_call(1, 0);
+        outcome.record_call(1, 0);
+        assert!(outcome.ok());
+    }
+
+    #[test]
+    fn probe_results_serialize_to_camel_case() {
+        let probe = InputProbeResult {
+            probe: "scan-code-w".into(),
+            label: "扫描码 W".into(),
+            description: "测试".into(),
+            ok: true,
+            requested: 2,
+            calls: 2,
+            sent: 2,
+            last_error_code: None,
+            last_error: None,
+            foreground_process: Some("destiny2.exe".into()),
+            integrity_level: Some("High (0x3000)".into()),
+            observed_async_down: Some(true),
+            duration_ms: 2,
+            timestamp: "2026-01-01T00:00:00.000Z".into(),
+        };
+        let raw = serde_json::to_string(&probe).unwrap();
+        assert!(!raw.contains("last_error_code"));
+        assert!(raw.contains("\"foregroundProcess\":\"destiny2.exe\""));
+        assert!(raw.contains("\"integrityLevel\":\"High (0x3000)\""));
+        assert!(raw.contains("\"observedAsyncDown\":true"));
+        assert!(raw.contains("\"durationMs\":2"));
+    }
+
+    /// 真实注入冒烟测试（仅 Windows，注入一次极短 W 与 ±1 像素鼠标移动）。
+    /// CI 中默认跳过；本地手动验收：cargo test -- --ignored
+    #[test]
+    #[ignore = "注入真实键鼠输入，仅本地手动验收运行"]
+    #[cfg(windows)]
+    fn probes_execute_on_windows_without_crashing() {
+        let probes = run_probes();
+        assert_eq!(probes.len(), 3);
+        assert_eq!(
+            probes.iter().map(|probe| probe.probe.as_str()).collect::<Vec<_>>(),
+            ["scan-code-w", "virtual-key-w", "mouse-relative"]
+        );
+        for probe in &probes {
+            assert_eq!(probe.requested, 2, "{} 的请求数应为 2", probe.label);
+            assert_eq!(probe.calls, 2, "{} 的调用次数应为 2", probe.label);
+            assert!(!probe.label.is_empty());
+            assert!(!probe.timestamp.is_empty());
+        }
     }
 }

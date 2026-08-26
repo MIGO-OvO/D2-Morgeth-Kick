@@ -5,7 +5,11 @@ use std::sync::{
 };
 use tauri::{AppHandle, Emitter};
 
-use crate::config::AppConfig;
+use crate::{
+    config::AppConfig,
+    diagnostics::{HotkeyTracker, Hub},
+    input::InputProbeResult,
+};
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -45,11 +49,20 @@ pub struct AppState {
     pub cancel: AtomicBool,
     pub updating: AtomicBool,
     pub hotkey_capture_active: AtomicBool,
+    pub diagnostics: Hub,
+    pub hotkeys: HotkeyTracker,
+    pub probes: Mutex<Vec<InputProbeResult>>,
     transition: Mutex<()>,
 }
 
 impl AppState {
+    /// 单元测试用的纯内存状态（不写日志文件）。
+    #[cfg(test)]
     pub fn new(config: AppConfig) -> Self {
+        Self::with_hub(config, Hub::memory())
+    }
+
+    pub fn with_hub(config: AppConfig, diagnostics: Hub) -> Self {
         let start_hotkey = config.hotkeys.start.clone();
         Self {
             config: Mutex::new(config),
@@ -61,6 +74,9 @@ impl AppState {
             cancel: AtomicBool::new(false),
             updating: AtomicBool::new(false),
             hotkey_capture_active: AtomicBool::new(false),
+            hotkeys: HotkeyTracker::new(diagnostics.clone()),
+            diagnostics,
+            probes: Mutex::new(Vec::new()),
             transition: Mutex::new(()),
         }
     }

@@ -71,15 +71,6 @@ pub enum HotkeyBinding {
     Mouse(MouseShortcut),
 }
 
-impl HotkeyBinding {
-    pub fn keyboard(self) -> Option<Shortcut> {
-        match self {
-            Self::Keyboard(shortcut) => Some(shortcut),
-            Self::Mouse(_) => None,
-        }
-    }
-}
-
 fn parse_hotkey(binding: &str, name: &str) -> Result<HotkeyBinding, String> {
     let mut parts = binding.split('+').collect::<Vec<_>>();
     let primary = parts
@@ -112,10 +103,24 @@ fn parse_hotkey(binding: &str, name: &str) -> Result<HotkeyBinding, String> {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HotkeyRole {
+    Start,
+    Stop,
+}
+
 impl HotkeyConfig {
+    /// 单独解析某个角色的热键（供诊断记录解析成功/失败与原始错误）。
+    pub fn role_binding(&self, role: HotkeyRole) -> Result<HotkeyBinding, String> {
+        match role {
+            HotkeyRole::Start => parse_hotkey(&self.start, "启动"),
+            HotkeyRole::Stop => parse_hotkey(&self.stop, "停止"),
+        }
+    }
+
     pub fn bindings(&self) -> Result<[HotkeyBinding; 2], String> {
-        let start = parse_hotkey(&self.start, "启动")?;
-        let stop = parse_hotkey(&self.stop, "停止")?;
+        let start = self.role_binding(HotkeyRole::Start)?;
+        let stop = self.role_binding(HotkeyRole::Stop)?;
         if start == stop {
             return Err("启动热键和停止热键不能相同".into());
         }
@@ -529,6 +534,37 @@ mod tests {
             ..AppConfig::default()
         };
         assert_eq!(config.validate().unwrap_err(), "启动热键和停止热键不能相同");
+    }
+
+    #[test]
+    fn role_binding_parses_each_hotkey_independently() {
+        let config = HotkeyConfig {
+            start: "F8".into(),
+            stop: "Control+Mouse4".into(),
+        };
+        assert_eq!(
+            config.role_binding(HotkeyRole::Start),
+            Ok(HotkeyBinding::Keyboard("F8".parse().unwrap()))
+        );
+        assert_eq!(
+            config.role_binding(HotkeyRole::Stop),
+            Ok(HotkeyBinding::Mouse(MouseShortcut {
+                button: MouseButton::Back,
+                modifiers: input::MOD_CONTROL,
+            }))
+        );
+    }
+
+    #[test]
+    fn role_binding_reports_raw_parse_errors() {
+        let config = HotkeyConfig {
+            start: "NotAKey".into(),
+            stop: "F10".into(),
+        };
+        assert!(config
+            .role_binding(HotkeyRole::Start)
+            .unwrap_err()
+            .contains("NotAKey"));
     }
 
     #[test]
