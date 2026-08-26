@@ -181,7 +181,7 @@ function UsageGuide({ usesAds, startHotkey, onClose, onOpenKeys }: UsageGuidePro
           <li><span>2</span><div><strong>选择棱镜配置</strong><p>近战选择冰飞镖，星相选择飞升和分身。</p></div></li>
           <li><span>3</span><div><strong>核对近战属性</strong><p>近战属性推荐叠至 140 左右。</p></div></li>
           <li><span>4</span><div><strong>设置切换冲刺</strong><p>游戏内与软件中的切换冲刺按键需要保持一致。</p></div></li>
-          <li><span>5</span><div><strong>装备运动强化模组</strong><p>腿部护甲推荐装备 3 个运动强化模组。</p></div></li>
+          <li><span>5</span><div><strong>装备运动强化模组</strong><p>腿部须装备运动强化模组。</p></div></li>
         </ul>
       ),
     },
@@ -229,7 +229,9 @@ function UsageGuide({ usesAds, startHotkey, onClose, onOpenKeys }: UsageGuidePro
       content: (
         <dl className="guide-faq">
           <div><dt>人物没跑到位置就停</dt><dd>确认游戏内已设置“切换冲刺”，并与软件按键映射一致。</dd></div>
-          <div><dt>飞升后后退过多等移动问题</dt><dd>检查是否装备了轻质框架武器和强化移动金装。</dd></div>
+          <div><dt>移动过度/不足，撞墙等问题</dt><dd>检查是否装备了轻质框架武器和强化移动金装。</dd></div>
+          <div><dt>为什么总是往左边飞？</dt><dd>小怪没有拉到位，需调整虚空箭落点与超能后等待时间。</dd></div>
+          <div><dt>为什么启动后没反应？</dt><dd>点击“诊断”查看是否全部正常，常见原因是键盘驱动冲突。</dd></div>
           <div><dt>虚空箭或冰飞镖偏得很远</dt><dd>确认软件与游戏的灵敏度一致，并检查执行方式是否与二号位武器匹配。</dd></div>
           <div><dt>无法终结或 BOSS 跺脚</dt><dd>微调近战、超能间隔和虚空箭落点，使飞镖与冲刺终结落在正确时机。</dd></div>
         </dl>
@@ -1067,7 +1069,7 @@ export default function App() {
 
       <footer className="app-footer">
         <div className="footer-actions">
-          <button type="button" onClick={() => setOpenPanel("guide")}><Icon name="help" />使用说明</button>
+          <button className="guide-button" type="button" onClick={() => setOpenPanel("guide")}><Icon name="help" />使用说明|有问题先看我</button>
           <button type="button" onClick={() => setOpenPanel("keys")}><Icon name="keyboard" />按键设置</button>
           <button type="button" onClick={() => setOpenPanel("diagnostics")} title="后端、热键、输入与环境自检，支持导出诊断包"><Icon name="pulse" />诊断</button>
           <button className="check-update-button" type="button" onClick={() => void checkForUpdates(true)} disabled={updateBusy || updateNotice.phase === "checking"} title={`当前版本 ${formatVersion(appVersion)}`}>

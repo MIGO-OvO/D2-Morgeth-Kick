@@ -226,7 +226,7 @@ main { width: 100%; max-width: 1500px; min-height: 0; flex: 1; margin: 0 auto; p
 .aim-mode-panel .mode-note { min-height: 0; }
 .aim-editor-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 10px 12px; align-items: stretch; }
 .aim-context { min-width: 0; display: flex; flex-direction: column; }
-.aim-context .aim-preview { flex: 1; min-height: 112px; display: flex; flex-direction: column; margin-bottom: 0; }
+.aim-context .aim-preview { flex: 1; min-height: 112px; display: flex; flex-direction: column; margin: 0; }
 .aim-context .aim-preview svg { min-height: 94px; height: auto; flex: 1; }
 .aim-editor-grid > .vector-card { height: 100%; margin-top: 0; }
 .timing-column { grid-area: timing; display: grid; grid-template-columns: minmax(160px, .46fr) minmax(0, 3.24fr); align-items: start; gap: 16px; }
@@ -298,6 +298,8 @@ main { width: 100%; max-width: 1500px; min-height: 0; flex: 1; margin: 0 auto; p
 .footer-actions button:hover { background: var(--surface-subtle); color: var(--text); }
 .footer-actions button:disabled { opacity: .45; cursor: not-allowed; }
 .footer-actions .icon { width: 14px; height: 14px; }
+.footer-actions .guide-button { color: var(--blue); }
+.footer-actions .guide-button:hover { background: var(--blue-soft); color: var(--blue-hover); }
 .footer-actions .check-update-button { gap: 5px; }
 .check-update-button small { padding-left: 2px; color: var(--metadata); font-family: var(--font-mono); font-size: 9px; font-weight: 500; }
 .footer-meta { display: flex; align-items: center; gap: 14px; flex: none; }
