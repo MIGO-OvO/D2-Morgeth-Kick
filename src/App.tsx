@@ -590,6 +590,12 @@ export default function App() {
         setConfig(nextConfig);
         setSnapshot(nextSnapshot);
         setResolution(nextResolution);
+        // 启动时就已处于 error 的 runtime-state（例如热键注册失败）同样完整保留，
+        // 不能只依赖后续 runtime-state 事件（订阅前的事件会丢失）。
+        if (nextSnapshot.status === "error" && nextSnapshot.message) {
+          setLastRuntimeError(nextSnapshot.message);
+          setError(nextSnapshot.message);
+        }
         readyRef.current = true;
         if (!nextConfig.usageGuideSeen) setOpenPanel("guide");
       })
