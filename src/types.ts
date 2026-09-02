@@ -9,11 +9,14 @@ export type RuntimeStatus =
   | "error";
 
 export interface TimingConfig {
-  ascensionWait: number;
-  meleeExtraWait: number;
-  adsToSuperWait: number;
-  superWait: number;
-  sprintATime: number;
+  strafeToFlagWait: number;
+  flagToClaimWait: number;
+  claimToWeaponWait: number;
+  weaponToMoveWait: number;
+  positionToAimWait: number;
+  aimToMeleeWait: number;
+  meleeToSuperWait: number;
+  superToSprintWait: number;
   sprintToFinisher: number;
 }
 

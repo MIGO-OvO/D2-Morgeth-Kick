@@ -48,11 +48,14 @@ export const defaultConfig: AppConfig = {
   sprintBase: [280, 0],
   sprintTrim: [0, 0],
   timings: {
-    ascensionWait: 1.5,
-    meleeExtraWait: 0.3,
-    adsToSuperWait: 2.5,
-    superWait: 1.9,
-    sprintATime: 0.1,
+    strafeToFlagWait: 0.6,
+    flagToClaimWait: 1,
+    claimToWeaponWait: 0.2,
+    weaponToMoveWait: 0.5,
+    positionToAimWait: 1.5,
+    aimToMeleeWait: 0.9,
+    meleeToSuperWait: 0.15,
+    superToSprintWait: 2,
     sprintToFinisher: 0,
   },
   hotkeys: { start: "F8", stop: "F10" },
@@ -230,7 +233,7 @@ export async function checkForAppUpdate(): Promise<AppUpdate | null> {
 }
 
 export async function getAppVersion(): Promise<string> {
-  return isTauri() ? getVersion() : "0.3.5";
+  return isTauri() ? getVersion() : "0.3.6";
 }
 
 export async function installAppUpdate(

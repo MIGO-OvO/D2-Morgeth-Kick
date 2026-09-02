@@ -1166,7 +1166,7 @@ mod tests {
     fn build_info_embeds_version_and_commit() {
         let info = build_info();
         assert_eq!(info.version, env!("CARGO_PKG_VERSION"));
-        assert_eq!(info.version, "0.3.5");
+        assert_eq!(info.version, "0.3.7");
         assert!(!info.commit_sha.is_empty());
         let expected_short = if info.commit_sha == "unknown" {
             "unknown"

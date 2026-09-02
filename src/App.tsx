@@ -6,6 +6,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 import {
@@ -58,6 +59,7 @@ import { applyTheme, resolveTheme, THEME_STORAGE_KEY, type Theme } from "./theme
 import morgethLogo from "../portal/morgeth-logo.png";
 
 type WorkspaceTab = "display" | "aim" | "timing";
+type TimingGroup = "entry" | "finish";
 type SaveState = "idle" | "saving" | "saved" | "error";
 type OpenPanel = "guide" | "keys" | "diagnostics" | null;
 type UpdatePhase = "idle" | "checking" | "current" | "available" | "downloading" | "installing" | "error";
@@ -213,7 +215,7 @@ function UsageGuide({ usesAds, startHotkey, onClose, onOpenKeys }: UsageGuidePro
         <div className="guide-feature-list">
           <section>
             <span>XY</span>
-            <div><strong>瞄点微调</strong><p>输入 X、Y 偏移量，可修正近战技能、虚空箭和终结时的瞄准点。</p><small>X 向左为负、向右为正；Y 向上为负、向下为正。</small></div>
+            <div><strong>瞄点微调</strong><p>点击或拖动预览中的蓝色落点，也可输入 X、Y 偏移量精确修正。</p><small>X 向左为负、向右为正；Y 向上为负、向下为正。</small></div>
           </section>
           <section>
             <span>秒</span>
@@ -230,7 +232,7 @@ function UsageGuide({ usesAds, startHotkey, onClose, onOpenKeys }: UsageGuidePro
         <dl className="guide-faq">
           <div><dt>人物没跑到位置就停</dt><dd>确认游戏内已设置“切换冲刺”，并与软件按键映射一致。</dd></div>
           <div><dt>移动过度/不足，撞墙等问题</dt><dd>检查是否装备了轻质框架武器和强化移动金装。</dd></div>
-          <div><dt>为什么总是往左边飞？</dt><dd>小怪没有拉到位，需调整虚空箭落点与超能后等待时间。</dd></div>
+          <div><dt>为什么总是往左边飞？</dt><dd>小怪没有拉到位，需调整虚空箭落点与“超能释放 → 冲刺转向”的等待。</dd></div>
           <div><dt>为什么启动后没反应？</dt><dd>点击“诊断”查看是否全部正常，常见原因是键盘驱动冲突。</dd></div>
           <div><dt>虚空箭或冰飞镖偏得很远</dt><dd>确认软件与游戏的灵敏度一致，并检查执行方式是否与二号位武器匹配。</dd></div>
           <div><dt>无法终结或 BOSS 跺脚</dt><dd>微调近战、超能间隔和虚空箭落点，使飞镖与冲刺终结落在正确时机。</dd></div>
@@ -423,6 +425,118 @@ function NumberField({ label, value, onChange, min, max, step = 1, unit, hint }:
   );
 }
 
+type TimingKey = keyof TimingConfig;
+
+interface TimingStep {
+  from: string;
+  to: string;
+  key: TimingKey;
+}
+
+function formatTiming(value: number) {
+  return value.toFixed(3);
+}
+
+function TimingInterval({
+  from,
+  to,
+  column,
+  value,
+  onChange,
+}: {
+  from: string;
+  to: string;
+  column: number;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState(() => formatTiming(value));
+  const parsed = Number(draft);
+  const valid = draft.trim() !== "" && Number.isFinite(parsed) && parsed >= 0 && parsed <= 10;
+  const label = `${from}到${to}的等待时间`;
+
+  useEffect(() => {
+    setDraft(formatTiming(value));
+  }, [value]);
+
+  const commit = (next: number) => {
+    const normalized = Math.round(Math.max(0, Math.min(10, next)) * 1000) / 1000;
+    setDraft(formatTiming(normalized));
+    onChange(normalized);
+  };
+
+  return (
+    <div className={`timing-connection${valid ? "" : " invalid"}`} style={{ gridColumn: column }}>
+      <span className="timing-line" aria-hidden="true"><i /></span>
+      <span className="timing-guide" aria-hidden="true" />
+      <div className="timing-stepper">
+        <button type="button" onClick={() => commit(value - 0.05)} aria-label={`${label}减少 0.05 秒`} title="减少 0.05 秒">−</button>
+        <label>
+          <span className="sr-only">{label}，单位秒</span>
+          <input
+            type="number"
+            min="0"
+            max="10"
+            step="0.001"
+            inputMode="decimal"
+            value={draft}
+            aria-invalid={!valid}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+              if (event.key === "Escape") {
+                setDraft(formatTiming(value));
+                event.currentTarget.blur();
+              }
+            }}
+            onBlur={(event) => {
+              const next = Number(event.currentTarget.value);
+              if (event.currentTarget.value.trim() !== "" && Number.isFinite(next) && next >= 0 && next <= 10) commit(next);
+              else setDraft(formatTiming(value));
+            }}
+          />
+          <span>秒</span>
+        </label>
+        <button type="button" onClick={() => commit(value + 0.05)} aria-label={`${label}增加 0.05 秒`} title="增加 0.05 秒">+</button>
+      </div>
+    </div>
+  );
+}
+
+function TimingFlow({
+  id,
+  steps,
+  timings,
+  onChange,
+}: {
+  id: string;
+  steps: TimingStep[];
+  timings: TimingConfig;
+  onChange: <K extends TimingKey>(key: K, value: TimingConfig[K]) => void;
+}) {
+  const nodes = [steps[0].from, ...steps.map((step) => step.to)];
+  return (
+    <div className="timing-flow" id={id} role="tabpanel">
+      <div className={`timing-map timing-map-${steps.length}`}>
+        {nodes.map((node, index) => (
+          <span className="timing-node" style={{ gridColumn: index * 2 + 1 }} key={`${node}-${index}`}>{node}</span>
+        ))}
+        {steps.map((step, index) => (
+          <TimingInterval
+            from={step.from}
+            to={step.to}
+            column={index * 2 + 2}
+            value={timings[step.key]}
+            onChange={(value) => onChange(step.key, value)}
+            key={step.key}
+          />
+        ))}
+      </div>
+      <p className="timing-help">第二排数值对应引导线所指的动作间隔，可直接输入或每次快调 0.05 秒。</p>
+    </div>
+  );
+}
+
 interface VectorEditorProps {
   title: string;
   description: string;
@@ -466,29 +580,98 @@ function VectorEditor({
   );
 }
 
-function AimPreview({ label, reference, value }: { label: string; reference: [number, number]; value: [number, number] }) {
+function AimPreview({
+  label,
+  reference,
+  value,
+  onChange,
+}: {
+  label: string;
+  reference: [number, number];
+  value: [number, number];
+  onChange: (value: [number, number]) => void;
+}) {
+  const draggingRef = useRef(false);
+  const [dragging, setDragging] = useState(false);
   const delta: [number, number] = [value[0] - reference[0], value[1] - reference[1]];
   const clamp = (input: number, min: number, max: number) => Math.max(min, Math.min(max, input));
   const x2 = clamp(80 + delta[0] / 20, 18, 142);
   const y2 = clamp(52 + delta[1] / 20, 14, 88);
   const signed = (input: number) => input > 0 ? `+${input}` : `${input}`;
+
+  const updateFromPointer = (event: ReactPointerEvent<SVGSVGElement>) => {
+    const matrix = event.currentTarget.getScreenCTM();
+    if (!matrix) return;
+    const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+    const nextX = clamp(point.x, 18, 142);
+    const nextY = clamp(point.y, 14, 88);
+    onChange([
+      reference[0] + Math.round((nextX - 80) * 20),
+      reference[1] + Math.round((nextY - 52) * 20),
+    ]);
+  };
+
+  const finishDrag = () => {
+    draggingRef.current = false;
+    setDragging(false);
+  };
+
   return (
-    <figure className="aim-preview">
+    <figure className={`aim-preview interactive${dragging ? " dragging" : ""}`}>
       <figcaption>
         <span>{label}微调预览</span>
         <strong>ΔX {signed(delta[0])} · ΔY {signed(delta[1])}</strong>
       </figcaption>
-      <svg viewBox="0 0 160 104" role="img" aria-label={`${label}默认落点到调整后落点，X 偏移 ${delta[0]}，Y 偏移 ${delta[1]}`}>
+      <svg
+        viewBox="0 0 160 104"
+        role="application"
+        tabIndex={0}
+        aria-label={`${label}二维落点调节器，X 偏移 ${delta[0]}，Y 偏移 ${delta[1]}。点击或拖动调整，也可使用方向键微调。`}
+        onPointerDown={(event) => {
+          if (!event.isPrimary || event.button !== 0) return;
+          event.preventDefault();
+          draggingRef.current = true;
+          setDragging(true);
+          event.currentTarget.setPointerCapture(event.pointerId);
+          updateFromPointer(event);
+        }}
+        onPointerMove={(event) => {
+          if (draggingRef.current && event.isPrimary) updateFromPointer(event);
+        }}
+        onPointerUp={finishDrag}
+        onPointerCancel={finishDrag}
+        onLostPointerCapture={finishDrag}
+        onKeyDown={(event) => {
+          const step = event.shiftKey ? 100 : 20;
+          if (event.key === "Home") {
+            event.preventDefault();
+            onChange(reference);
+          } else if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            onChange([value[0] - step, value[1]]);
+          } else if (event.key === "ArrowRight") {
+            event.preventDefault();
+            onChange([value[0] + step, value[1]]);
+          } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            onChange([value[0], value[1] - step]);
+          } else if (event.key === "ArrowDown") {
+            event.preventDefault();
+            onChange([value[0], value[1] + step]);
+          }
+        }}
+      >
         <path className="preview-grid" d="M16 52h128M80 12v80" />
         <circle className="preview-ring" cx="80" cy="52" r="28" />
         <path className="preview-vector" d={`M80 52 L${x2} ${y2}`} />
         <circle className="preview-reference" cx="80" cy="52" r="6" />
+        <circle className="preview-handle" cx={x2} cy={y2} r="10" />
         <circle className="preview-point" cx={x2} cy={y2} r="4" />
       </svg>
       <div className="preview-legend" title="预览比例：每 20 个鼠标计数显示 1 px">
         <span><i className="reference" />默认落点</span>
         <span><i className="current" />调整后</span>
-        <small>当前 {value[0]}, {value[1]} · 20:1</small>
+        <small>点击或拖动调整 · 20:1</small>
       </div>
     </figure>
   );
@@ -501,6 +684,7 @@ export default function App() {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<WorkspaceTab>("display");
+  const [timingGroup, setTimingGroup] = useState<TimingGroup>("entry");
   const [selectedVector, setSelectedVector] = useState<"first" | "void" | "sprint">("void");
   const [theme, setTheme] = useState<Theme>(resolveTheme);
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
@@ -565,6 +749,21 @@ export default function App() {
   };
   const updateGameKey = <K extends keyof GameKeyConfig>(key: K, value: GameKeyConfig[K]) => {
     setConfig((current) => ({ ...current, gameKeys: { ...current.gameKeys, [key]: value } }));
+  };
+  const updateSelectedPreview = (target: [number, number]) => {
+    setConfig((current) => {
+      const currentApplied = calculateAppliedOffsets(current);
+      if (selectedVector === "first") {
+        const usesCurrentAds = current.firstAimMode === "ads";
+        const scale = usesCurrentAds ? currentApplied.adsScale : currentApplied.lookScale;
+        const base = target.map((value) => Math.round(value / scale)) as [number, number];
+        return { ...current, [usesCurrentAds ? "firstAdsBase" : "firstHipBase"]: base };
+      }
+
+      const base = selectedVector === "void" ? current.voidArrowBase : current.sprintBase;
+      const trim = target.map((value, index) => value - Math.round(base[index] * currentApplied.lookScale)) as [number, number];
+      return { ...current, [selectedVector === "void" ? "voidArrowTrim" : "sprintTrim"]: trim };
+    });
   };
 
   useEffect(() => {
@@ -813,6 +1012,19 @@ export default function App() {
     ["superAbility", "超能", "F"],
     ["finisher", "终结技", "G"],
   ];
+  const entryTimingSteps: TimingStep[] = [
+    { from: "左移结束", to: "插旗", key: "strafeToFlagWait" },
+    { from: "插旗", to: "摸旗", key: "flagToClaimWait" },
+    { from: "摸旗", to: "切武器", key: "claimToWeaponWait" },
+    { from: "切武器", to: "开始移动", key: "weaponToMoveWait" },
+  ];
+  const finishTimingSteps: TimingStep[] = [
+    { from: "后退定位", to: "首次转向", key: "positionToAimWait" },
+    { from: "首次转向", to: "近战", key: "aimToMeleeWait" },
+    { from: "近战", to: "虚空箭", key: "meleeToSuperWait" },
+    { from: "虚空箭", to: "冲刺转向", key: "superToSprintWait" },
+    { from: "冲刺转向", to: "终结", key: "sprintToFinisher" },
+  ];
   const updateBusy = ["downloading", "installing"].includes(updateNotice.phase);
   const showUpdateNotice = ["available", "downloading", "installing"].includes(updateNotice.phase)
     || Boolean(updateNotice.manual && ["checking", "current", "error"].includes(updateNotice.phase));
@@ -1016,7 +1228,12 @@ export default function App() {
             </div>
             <div className="aim-editor-grid">
               <div className="aim-context">
-                <AimPreview label={selectedPreview.label} reference={selectedPreview.reference} value={selectedPreview.value} />
+                <AimPreview
+                  label={selectedPreview.label}
+                  reference={selectedPreview.reference}
+                  value={selectedPreview.value}
+                  onChange={updateSelectedPreview}
+                />
               </div>
               <VectorEditor
                 title={firstAimLabel}
@@ -1051,18 +1268,33 @@ export default function App() {
           </section>
 
           <section className={`calibration-column timing-column ${tab === "timing" ? "mobile-active" : ""}`} aria-labelledby="timing-title">
-            <div className="column-heading">
-              <span className="column-icon"><Icon name="clock" /></span>
-              <div><h2 id="timing-title">动作时序</h2><p>调整每段等待，{formatHotkey(config.hotkeys.stop)} 随时可停。</p></div>
+            <div className="timing-sidebar">
+              <div className="column-heading">
+                <span className="column-icon"><Icon name="clock" /></span>
+                <div><h2 id="timing-title">动作时序</h2><p>修改动作间隔时间</p></div>
+              </div>
+              <div className="segment-control timing-group-control" role="tablist" aria-label="动作时序分组">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={timingGroup === "entry"}
+                  aria-controls="timing-flow-entry"
+                  className={timingGroup === "entry" ? "active" : ""}
+                  onClick={() => setTimingGroup("entry")}
+                >入场交互</button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={timingGroup === "finish"}
+                  aria-controls="timing-flow-finish"
+                  className={timingGroup === "finish" ? "active" : ""}
+                  onClick={() => setTimingGroup("finish")}
+                >技能终结</button>
+              </div>
             </div>
-            <div className="timing-list">
-              <NumberField label="飞升后等待" value={config.timings.ascensionWait} min={0} max={10} step={0.05} unit="秒" onChange={(value) => updateTiming("ascensionWait", value)} hint={`${formatKey(config.gameKeys.ascension)} 飞升至后退定位`} />
-              <NumberField label="近战额外等待" value={config.timings.meleeExtraWait} min={0} max={5} step={0.05} unit="秒" onChange={(value) => updateTiming("meleeExtraWait", value)} hint={`${firstAimLabel}到 ${formatKey(config.gameKeys.melee)} 近战前追加`} />
-              <NumberField label="首次转向至超能" value={config.timings.adsToSuperWait} min={0} max={10} step={0.05} unit="秒" onChange={(value) => updateTiming("adsToSuperWait", value)} hint="从首次转向阶段开始计算" />
-              <NumberField label="超能后等待" value={config.timings.superWait} min={0} max={10} step={0.05} unit="秒" onChange={(value) => updateTiming("superWait", value)} hint={`${formatKey(config.gameKeys.superAbility)} 释放后至冲刺`} />
-              <NumberField label="冲刺侧移时间" value={config.timings.sprintATime} min={0} max={3} step={0.01} unit="秒" onChange={(value) => updateTiming("sprintATime", value)} hint="A 先行按下时长" />
-              <NumberField label="冲刺至终结" value={config.timings.sprintToFinisher} min={0} max={5} step={0.05} unit="秒" onChange={(value) => updateTiming("sprintToFinisher", value)} hint="镜头微调后附加" />
-            </div>
+            {timingGroup === "entry"
+              ? <TimingFlow id="timing-flow-entry" steps={entryTimingSteps} timings={config.timings} onChange={updateTiming} />
+              : <TimingFlow id="timing-flow-finish" steps={finishTimingSteps} timings={config.timings} onChange={updateTiming} />}
           </section>
         </div>
       </main>

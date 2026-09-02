@@ -52,16 +52,6 @@ fn wait_seconds(state: &AppState, seconds: f64) -> SequenceResult {
     wait(state, Duration::from_secs_f64(seconds.max(0.0)))
 }
 
-fn wait_until(state: &AppState, start: Instant, seconds: f64) -> SequenceResult {
-    let target = start + Duration::from_secs_f64(seconds.max(0.0));
-    let now = Instant::now();
-    if target > now {
-        wait(state, target - now)
-    } else {
-        check_cancel(state)
-    }
-}
-
 fn key(state: &AppState, binding: InputBinding, down: bool) -> SequenceResult {
     check_cancel(state)?;
     input::set(binding, down).map_err(SequenceError::Input)
@@ -120,69 +110,71 @@ fn set_phase(app: &AppHandle, state: &AppState, index: usize, name: &str) {
     });
 }
 
-// The decimal values below are recorded replay timestamps, not mathematical constants.
-#[allow(clippy::approx_constant)]
-fn pre_ascension(app: &AppHandle, state: &AppState, keys: AppliedGameKeys) -> SequenceResult {
-    let start = Instant::now();
+// Fixed durations below are retained from the recorded replay. User-facing waits are always
+// measured from the completion of the preceding action.
+fn pre_ascension(
+    app: &AppHandle,
+    state: &AppState,
+    config: &AppConfig,
+    keys: AppliedGameKeys,
+) -> SequenceResult {
     key(state, KEY_W, true)?;
-    wait_until(state, start, 0.359)?;
+    wait_seconds(state, 0.359)?;
     key(state, KEY_W, false)?;
 
-    wait_until(state, start, 0.718)?;
+    wait_seconds(state, 0.359)?;
     key(state, KEY_A, true)?;
-    wait_until(state, start, 1.172)?;
+    wait_seconds(state, 0.454)?;
     key(state, KEY_A, false)?;
 
-    wait_until(state, start, 1.859)?;
+    wait_seconds(state, config.timings.strafe_to_flag_wait)?;
     key(state, keys.interact, true)?;
-    wait_until(state, start, 2.718)?;
+    wait_seconds(state, 0.859)?;
     key(state, keys.interact, false)?;
 
-    wait_until(state, start, 4.703)?;
+    wait_seconds(state, config.timings.flag_to_claim_wait)?;
     key(state, keys.interact, true)?;
-    wait_until(state, start, 5.265)?;
+    wait_seconds(state, 0.562)?;
     key(state, keys.interact, false)?;
 
-    wait_until(state, start, 5.672)?;
-    tap(state, keys.weapon_slot_2, 28)?;
-    wait_until(state, start, 5.953)?;
+    wait_seconds(state, config.timings.claim_to_weapon_wait)?;
     tap(state, keys.weapon_slot_2, 28)?;
 
-    wait_until(state, start, 7.656)?;
+    wait_seconds(state, config.timings.weapon_to_move_wait)?;
     key(state, KEY_W, true)?;
-    wait_until(state, start, 8.343)?;
+    wait_seconds(state, 0.687)?;
     key(state, keys.sprint, true)?;
-    wait_until(state, start, 8.500)?;
+    wait_seconds(state, 0.157)?;
     key(state, keys.sprint, false)?;
 
-    wait_until(state, start, 10.109)?;
+    wait_seconds(state, 1.609)?;
     key(state, KEY_D, true)?;
-    wait_until(state, start, 12.125)?;
+    wait_seconds(state, 2.016)?;
     key(state, KEY_D, false)?;
 
-    wait_until(state, start, 13.015)?;
+    wait_seconds(state, 0.890)?;
     key(state, KEY_D, true)?;
-    wait_until(state, start, 13.312)?;
+    wait_seconds(state, 0.297)?;
     key(state, KEY_D, false)?;
 
-    wait_until(state, start, 15.406)?;
+    wait_seconds(state, 2.094)?;
     key(state, KEY_A, true)?;
-    wait_until(state, start, 16.218)?;
+    wait_seconds(state, 0.812)?;
     key(state, KEY_A, false)?;
 
-    wait_until(state, start, 16.422)?;
+    wait_seconds(state, 0.204)?;
     key(state, KEY_A, true)?;
-    wait_until(state, start, 16.609)?;
+    wait_seconds(state, 0.187)?;
     key(state, KEY_A, false)?;
 
-    wait_until(state, start, 17.422)?;
+    wait_seconds(state, 0.813)?;
     key(state, KEY_W, false)?;
     set_phase(app, state, 1, "飞升");
-    wait_until(state, start, 17.625)?;
+    wait_seconds(state, 0.203)?;
     key(state, keys.jump, true)?;
-    wait_until(state, start, 17.781)?;
+    wait_seconds(state, 0.156)?;
     key(state, keys.jump, false)?;
-    wait_until(state, start, 18.031)
+    wait_seconds(state, 0.250)
 }
 
 fn post_ascension(
@@ -192,19 +184,18 @@ fn post_ascension(
     keys: AppliedGameKeys,
 ) -> SequenceResult {
     tap(state, keys.ascension, 35)?;
-    wait_seconds(state, config.timings.ascension_wait)?;
+    wait_seconds(state, 1.5)?;
 
     set_phase(app, state, 2, "后退定位");
-    let start = Instant::now();
     key(state, KEY_S, true)?;
-    wait_until(state, start, 0.188)?;
+    wait_seconds(state, 0.188)?;
     key(state, KEY_S, false)?;
-    wait_until(state, start, 0.469)?;
+    wait_seconds(state, 0.281)?;
     key(state, KEY_S, true)?;
-    wait_until(state, start, 0.594)?;
+    wait_seconds(state, 0.125)?;
     key(state, KEY_S, false)?;
 
-    wait_until(state, start, 2.109)?;
+    wait_seconds(state, config.timings.position_to_aim_wait)?;
     let uses_ads = config.first_aim_mode == FirstAimMode::Ads;
     set_phase(
         app,
@@ -219,7 +210,7 @@ fn post_ascension(
     if uses_ads {
         right_mouse(state, true)?;
     }
-    wait_until(state, start, 2.125)?;
+    wait_seconds(state, 0.016)?;
     let (first_offset, first_reference) = if uses_ads {
         (config.first_ads_offset(), config.first_ads_base)
     } else {
@@ -227,8 +218,7 @@ fn post_ascension(
     };
     turn_camera(state, first_offset, first_reference, 10)?;
 
-    wait_until(state, start, 4.047)?;
-    wait_seconds(state, config.timings.melee_extra_wait)?;
+    wait_seconds(state, config.timings.aim_to_melee_wait)?;
     key(state, keys.melee, true)?;
     wait(state, Duration::from_millis(47))?;
     if uses_ads {
@@ -237,7 +227,7 @@ fn post_ascension(
     wait(state, Duration::from_millis(31))?;
     key(state, keys.melee, false)?;
 
-    wait_until(state, start, 2.109 + config.timings.ads_to_super_wait)?;
+    wait_seconds(state, config.timings.melee_to_super_wait)?;
     set_phase(app, state, 4, "虚空箭");
     turn_camera(
         state,
@@ -246,11 +236,11 @@ fn post_ascension(
         10,
     )?;
     tap(state, keys.super_ability, 125)?;
-    wait_seconds(state, config.timings.super_wait)?;
+    wait_seconds(state, config.timings.super_to_sprint_wait)?;
 
     set_phase(app, state, 5, "冲刺");
     key(state, KEY_A, true)?;
-    wait_seconds(state, config.timings.sprint_a_time)?;
+    wait_seconds(state, 0.1)?;
     key(state, KEY_W, true)?;
     wait(state, Duration::from_millis(78))?;
     key(state, keys.sprint, true)?;
@@ -275,7 +265,7 @@ pub fn execute(app: &AppHandle, state: &Arc<AppState>, config: &AppConfig) -> Se
     let keys = config.game_keys.applied().map_err(SequenceError::Input)?;
     let result = (|| {
         set_phase(app, state, 0, "进场准备");
-        pre_ascension(app, state, keys)?;
+        pre_ascension(app, state, config, keys)?;
         post_ascension(app, state, config, keys)
     })();
     input::release_all(&keys.all());

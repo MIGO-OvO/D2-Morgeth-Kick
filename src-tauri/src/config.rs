@@ -19,27 +19,94 @@ pub enum FirstAimMode {
     Hipfire,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TimingConfig {
-    pub ascension_wait: f64,
-    pub melee_extra_wait: f64,
-    pub ads_to_super_wait: f64,
-    pub super_wait: f64,
-    pub sprint_a_time: f64,
+    pub strafe_to_flag_wait: f64,
+    pub flag_to_claim_wait: f64,
+    pub claim_to_weapon_wait: f64,
+    pub weapon_to_move_wait: f64,
+    pub position_to_aim_wait: f64,
+    pub aim_to_melee_wait: f64,
+    pub melee_to_super_wait: f64,
+    pub super_to_sprint_wait: f64,
     pub sprint_to_finisher: f64,
 }
 
 impl Default for TimingConfig {
     fn default() -> Self {
         Self {
-            ascension_wait: 1.5,
-            melee_extra_wait: 0.3,
-            ads_to_super_wait: 2.5,
-            super_wait: 1.9,
-            sprint_a_time: 0.1,
+            strafe_to_flag_wait: 0.6,
+            flag_to_claim_wait: 1.0,
+            claim_to_weapon_wait: 0.2,
+            weapon_to_move_wait: 0.5,
+            position_to_aim_wait: 1.5,
+            aim_to_melee_wait: 0.9,
+            melee_to_super_wait: 0.15,
+            super_to_sprint_wait: 2.0,
             sprint_to_finisher: 0.0,
         }
+    }
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct TimingConfigWire {
+    strafe_to_flag_wait: Option<f64>,
+    flag_to_claim_wait: Option<f64>,
+    claim_to_weapon_wait: Option<f64>,
+    weapon_to_move_wait: Option<f64>,
+    position_to_aim_wait: Option<f64>,
+    aim_to_melee_wait: Option<f64>,
+    melee_to_super_wait: Option<f64>,
+    super_to_sprint_wait: Option<f64>,
+    sprint_to_finisher: Option<f64>,
+    // v0.3.6 and earlier used a mix of absolute phase anchors and direct waits.
+    melee_extra_wait: Option<f64>,
+    ads_to_super_wait: Option<f64>,
+    super_wait: Option<f64>,
+}
+
+impl<'de> Deserialize<'de> for TimingConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let wire = TimingConfigWire::deserialize(deserializer)?;
+        let defaults = Self::default();
+        let legacy_melee_extra = wire.melee_extra_wait.unwrap_or(0.3);
+        let legacy_super_anchor = wire.ads_to_super_wait.unwrap_or(2.5);
+
+        Ok(Self {
+            strafe_to_flag_wait: wire
+                .strafe_to_flag_wait
+                .unwrap_or(defaults.strafe_to_flag_wait),
+            flag_to_claim_wait: wire
+                .flag_to_claim_wait
+                .unwrap_or(defaults.flag_to_claim_wait),
+            claim_to_weapon_wait: wire
+                .claim_to_weapon_wait
+                .unwrap_or(defaults.claim_to_weapon_wait),
+            weapon_to_move_wait: wire
+                .weapon_to_move_wait
+                .unwrap_or(defaults.weapon_to_move_wait),
+            position_to_aim_wait: wire
+                .position_to_aim_wait
+                .unwrap_or(defaults.position_to_aim_wait),
+            // The old melee value was an extra wait after the fixed 4.047 s phase anchor.
+            aim_to_melee_wait: wire.aim_to_melee_wait.unwrap_or(0.522 + legacy_melee_extra),
+            // The old super value was anchored at 2.109 s, so subtract the melee end time.
+            melee_to_super_wait: wire
+                .melee_to_super_wait
+                .unwrap_or_else(|| (legacy_super_anchor - 2.016 - legacy_melee_extra).max(0.0)),
+            super_to_sprint_wait: wire
+                .super_to_sprint_wait
+                .or(wire.super_wait)
+                .unwrap_or(defaults.super_to_sprint_wait),
+            sprint_to_finisher: wire
+                .sprint_to_finisher
+                .unwrap_or(defaults.sprint_to_finisher),
+        })
     }
 }
 
@@ -287,15 +354,18 @@ impl AppConfig {
             }
         }
         for (name, value) in [
-            ("飞升后等待", self.timings.ascension_wait),
-            ("近战额外等待", self.timings.melee_extra_wait),
-            ("首次转向至超能", self.timings.ads_to_super_wait),
-            ("超能后等待", self.timings.super_wait),
-            ("冲刺侧移时间", self.timings.sprint_a_time),
-            ("冲刺至终结", self.timings.sprint_to_finisher),
+            ("左移结束至插旗", self.timings.strafe_to_flag_wait),
+            ("插旗结束至摸旗", self.timings.flag_to_claim_wait),
+            ("摸旗结束至切武器", self.timings.claim_to_weapon_wait),
+            ("切武器结束至开始移动", self.timings.weapon_to_move_wait),
+            ("后退定位结束至首次转向", self.timings.position_to_aim_wait),
+            ("首次转向结束至近战", self.timings.aim_to_melee_wait),
+            ("近战结束至虚空箭", self.timings.melee_to_super_wait),
+            ("超能结束至冲刺", self.timings.super_to_sprint_wait),
+            ("冲刺转向结束至终结", self.timings.sprint_to_finisher),
         ] {
-            if !value.is_finite() || !(0.0..=60.0).contains(&value) {
-                return Err(format!("{name} 必须在 0 到 60 秒之间"));
+            if !value.is_finite() || !(0.0..=10.0).contains(&value) {
+                return Err(format!("{name}必须在 0 到 10 秒之间"));
             }
         }
         if !self.overlay_opacity.is_finite() || !(0.3..=1.0).contains(&self.overlay_opacity) {
@@ -385,12 +455,39 @@ mod tests {
         assert_eq!(config.first_hip_offset(), [-1320, 30]);
         assert_eq!(config.void_arrow_offset(), [-350, 81]);
         assert_eq!(config.sprint_offset(), [280, 0]);
-        assert_eq!(config.timings.ascension_wait, 1.5);
-        assert_eq!(config.timings.melee_extra_wait, 0.3);
-        assert_eq!(config.timings.ads_to_super_wait, 2.5);
-        assert_eq!(config.timings.super_wait, 1.9);
-        assert_eq!(config.timings.sprint_a_time, 0.1);
+        assert_eq!(config.timings.strafe_to_flag_wait, 0.6);
+        assert_eq!(config.timings.flag_to_claim_wait, 1.0);
+        assert_eq!(config.timings.claim_to_weapon_wait, 0.2);
+        assert_eq!(config.timings.weapon_to_move_wait, 0.5);
+        assert_eq!(config.timings.position_to_aim_wait, 1.5);
+        assert_eq!(config.timings.aim_to_melee_wait, 0.9);
+        assert_eq!(config.timings.melee_to_super_wait, 0.15);
+        assert_eq!(config.timings.super_to_sprint_wait, 2.0);
         assert_eq!(config.timings.sprint_to_finisher, 0.0);
+    }
+
+    #[test]
+    fn legacy_timing_settings_migrate_to_adjacent_action_waits() {
+        let config: AppConfig = serde_json::from_str(
+            r#"{
+                "timings": {
+                    "ascensionWait": 2.1,
+                    "meleeExtraWait": 0.4,
+                    "adsToSuperWait": 2.8,
+                    "superWait": 2.2,
+                    "sprintATime": 0.2,
+                    "sprintToFinisher": 0.15
+                }
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(config.timings.strafe_to_flag_wait, 0.6);
+        assert_eq!(config.timings.aim_to_melee_wait, 0.922);
+        assert!((config.timings.melee_to_super_wait - 0.384).abs() < 1e-9);
+        assert_eq!(config.timings.super_to_sprint_wait, 2.2);
+        assert_eq!(config.timings.sprint_to_finisher, 0.15);
+        assert!(config.validate().is_ok());
     }
 
     #[test]
