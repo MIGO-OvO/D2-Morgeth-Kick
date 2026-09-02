@@ -18,13 +18,11 @@
         "url": "index.html",
         "width": 1180,
         "height": 760,
-        "minWidth": 1180,
-        "minHeight": 760,
-        "maxWidth": 1180,
-        "maxHeight": 760,
+        "minWidth": 560,
+        "minHeight": 360,
         "center": true,
-        "resizable": false,
-        "maximizable": false,
+        "resizable": true,
+        "maximizable": true,
         "decorations": false
       },
       {

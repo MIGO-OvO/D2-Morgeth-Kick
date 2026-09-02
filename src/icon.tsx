@@ -14,6 +14,7 @@ export type IconName =
   | "close"
   | "reset"
   | "minimize"
+  | "maximize"
   | "pulse"
   | "download"
   | "copy"
@@ -34,6 +35,7 @@ export function Icon({ name }: { name: IconName }) {
     close: <path d="m7 7 10 10M17 7 7 17" />,
     reset: <><path d="M4 4v6h6" /><path d="M5.5 15a7 7 0 1 0 .2-8.2L4 10" /></>,
     minimize: <path d="M6 16h12" />,
+    maximize: <rect x="5" y="5" width="14" height="14" rx="1" />,
     pulse: <><path d="M3 12h4l2.5-6 4 12L16 12h5" /><circle cx="20" cy="7" r="1" /><circle cx="4" cy="17" r="1" /></>,
     download: <><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M4 20h16" /></>,
     copy: <><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" /></>,

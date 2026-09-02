@@ -265,6 +265,10 @@ export async function minimizeWindow(): Promise<void> {
   if (isTauri()) await getCurrentWindow().minimize();
 }
 
+export async function toggleMaximizeWindow(): Promise<void> {
+  if (isTauri()) await getCurrentWindow().toggleMaximize();
+}
+
 export async function closeWindow(): Promise<void> {
   if (isTauri()) await getCurrentWindow().close();
 }

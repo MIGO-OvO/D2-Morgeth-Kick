@@ -29,6 +29,7 @@ import {
   setOverlayVisible,
   startSequence,
   stopSequence,
+  toggleMaximizeWindow,
   type AppUpdate,
   type AppUpdateDownloadEvent,
 } from "./api";
@@ -1111,6 +1112,7 @@ export default function App() {
           </button>
           <div className="window-controls" aria-label="窗口控制">
             <button type="button" onClick={() => void minimizeWindow()} aria-label="最小化" title="最小化"><Icon name="minimize" /></button>
+            <button type="button" onClick={() => void toggleMaximizeWindow()} aria-label="最大化或还原" title="最大化或还原"><Icon name="maximize" /></button>
             <button className="window-close" type="button" onClick={() => void closeWindow()} aria-label="关闭" title="关闭"><Icon name="close" /></button>
           </div>
         </div>
